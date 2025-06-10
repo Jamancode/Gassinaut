@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐕 Gassi-Tracker Ultimate Pro</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #ff6b6b;
+            --secondary: #4ecdc4;
+            --accent: #ffe66d;
+            --dark: #2d3436;
+            --light: #dfe6e9;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #e74c3c;
+            --info: #74b9ff;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-dark: rgba(0, 0, 0, 0.2);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            --priority-must: #e74c3c;
+            --priority-should: #f39c12;
+            --priority-can: #f1c40f;
+            --priority-individual: #27ae60;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animierter Hintergrund */
+        .bg-animation {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .paw {
+            position: absolute;
+            font-size: 40px;
+            opacity: 0.1;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-30px) rotate(90deg); }
+            50% { transform: translateY(0) rotate(180deg); }
+            75% { transform: translateY(30px) rotate(270deg); }
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            background: var(--glass-dark);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .nav-item {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 10px 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-item:hover::before {
+            left: 100%;
+        }
+
+        .nav-item:hover {
+            background: var(--accent);
+            color: var(--dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-item.active {
+            background: var(--accent);
+            color: var(--dark);
+        }
+
+        .nav-item.gassi-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Styles */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+
+        .dashboard-card:hover::after {
+            opacity: 1;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+        }
+
+        /* Quick Stats */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .mini-stat {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .mini-stat:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .mini-stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .mini-stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        /* Priority Badges */
+        .priority-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: white;
+            margin: 2px;
+        }
+
+        .priority-must {
+            background: var(--priority-must);
+        }
+
+        .priority-should {
+            background: var(--priority-should);
+        }
+
+        .priority-can {
+            background: var(--priority-can);
+            color: var(--dark);
+        }
+
+        .priority-individual {
+            background: var(--priority-individual);
+        }
+
+        /* Checklist Styles */
+        .checklist-container {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .checklist-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .checklist-title {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .checklist-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checklist-item-content {
+            flex: 1;
+        }
+
+        .checklist-item-title {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .checklist-item-desc {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Form Styles */
+        .form-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: white;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(255, 230, 109, 0.3);
+        }
+
+        /* Button Styles */
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #00cec9);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #feca57);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #ee5a6f);
+        }
+
+        /* Gassi Timer */
+        .gassi-timer {
+            background: var(--glass-dark);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 3px solid var(--accent);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gassi-timer::before {
+            content: '🐕';
+            position: absolute;
+            font-size: 200px;
+            opacity: 0.05;
+            top: -50px;
+            right: -50px;
+            transform: rotate(-15deg);
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 5px;
+            margin: 20px 0;
+        }
+
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        /* Map Container */
+        #map {
+            height: 500px;
+            border-radius: 20px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .metric-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+        }
+
+        /* Slider Styles */
+        .slider-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .slider {
+            width: 100%;
+            height: 30px;
+            border-radius: 15px;
+            background: linear-gradient(to right, #2ecc71 0%, #f1c40f 50%, #e74c3c 100%);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            border: 3px solid var(--accent);
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Weather Widget */
+        .weather-widget {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .weather-icon {
+            font-size: 3rem;
+        }
+
+        .weather-info {
+            flex: 1;
+            color: white;
+        }
+
+        .weather-temp {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .activity-icon {
+            font-size: 2rem;
+        }
+
+        .activity-content {
+            flex: 1;
+            color: white;
+        }
+
+        .activity-time {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        /* Charts Container */
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            height: 300px;
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+            background-clip: content-box;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .timer-display {
+                font-size: 3rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animierter Hintergrund -->
+    <div class="bg-animation">
+        <div class="paw" style="top: 10%; left: 5%; animation-delay: 0s;">🐾</div>
+        <div class="paw" style="top: 20%; right: 10%; animation-delay: 2s;">🐾</div>
+        <div class="paw" style="top: 50%; left: 15%; animation-delay: 4s;">🐾</div>
+        <div class="paw" style="top: 70%; right: 20%; animation-delay: 6s;">🐾</div>
+        <div class="paw" style="top: 85%; left: 8%; animation-delay: 8s;">🐾</div>
+    </div>
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="logo">
+                <span>🐕</span>
+                <span>Gassi-Tracker Pro</span>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-item active" onclick="showSection('dashboard')">
+                    📊 Dashboard
+                </div>
+                <div class="nav-item" onclick="showSection('gassi')">
+                    🚶 Gassi-Runde
+                </div>
+                <div class="nav-item" onclick="showSection('checklists')">
+                    ✅ Checklisten
+                </div>
+                <div class="nav-item" onclick="showSection('management')">
+                    🎯 Verwaltung
+                </div>
+                <div class="nav-item" onclick="showSection('training')">
+                    🧠 Training
+                </div>
+                <div class="nav-item" onclick="showSection('health')">
+                    ⚕️ Gesundheit
+                </div>
+                <div class="nav-item gassi-btn" onclick="quickStartGassi()">
+                    ⚡ QUICK START
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <h1 style="color: white; font-size: 2.5rem; margin-bottom: 30px; text-align: center;">
+                🏠 Willkommen im Gassi-Dashboard
+            </h1>
+
+            <!-- Quick Stats -->
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-icon">📈</span>
+                            <span>Heute</span>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="mini-stat">
+                            <div class="mini-stat-value">0</div>
+                            <div class="mini-stat-label">Gassi-Runden</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-value">0.0</div>
+                            <div class="mini-stat-label">Kilometer</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-value">0</div>
+                            <div class="mini-stat-label">Minuten</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-icon">🌤️</span>
+                            <span>Wetter</span>
+                        </div>
+                    </div>
+                    <div class="weather-widget">
+                        <div class="weather-icon">☀️</div>
+                        <div class="weather-info">
+                            <div class="weather-temp">22°C</div>
+                            <div>Sonnig, perfektes Gassi-Wetter!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="card-icon">🎯</span>
+                            <span>Tages-Ziele</span>
+                        </div>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="goal1">
+                        <div class="checklist-item-content">
+                            <div class="checklist-item-title">3 Gassi-Runden</div>
+                            <div class="checklist-item-desc">Morgens, mittags, abends</div>
+                        </div>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="goal2">
+                        <div class="checklist-item-content">
+                            <div class="checklist-item-title">5 km Gesamtstrecke</div>
+                            <div class="checklist-item-desc">Bewegung ist wichtig!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aktivitätsfeed -->
+            <div class="dashboard-card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📰</span>
+                        <span>Letzte Aktivitäten</span>
+                    </div>
+                </div>
+                <div class="activity-feed" id="activityFeed">
+                    <div class="activity-item">
+                        <div class="activity-icon">🚶</div>
+                        <div class="activity-content">
+                            <div>Noch keine Gassi-Runden heute</div>
+                            <div class="activity-time">Starte deine erste Runde!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="dashboard-card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📊</span>
+                        <span>Wochenübersicht</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="weekChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gassi-Runde Section -->
+        <section id="gassi" class="content-section">
+            <div class="gassi-timer">
+                <h2 style="color: white; font-size: 2.5rem; margin-bottom: 20px;">
+                    🚶 Gassi-Runde Tracker
+                </h2>
+                <div class="timer-display" id="timerDisplay">00:00:00</div>
+
+                <div class="timer-controls">
+                    <button class="btn btn-success" onclick="startGassi()" id="startBtn">
+                        ▶️ START
+                    </button>
+                    <button class="btn btn-warning" onclick="pauseGassi()" id="pauseBtn" disabled>
+                        ⏸️ PAUSE
+                    </button>
+                    <button class="btn btn-danger" onclick="stopGassi()" id="stopBtn" disabled>
+                        ⏹️ BEENDEN
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Metriken -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">📍</div>
+                    <div class="metric-value" id="distanceMetric">0.00</div>
+                    <div class="metric-label">Kilometer</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">👣</div>
+                    <div class="metric-value" id="stepsMetric">0</div>
+                    <div class="metric-label">Schritte</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">⚡</div>
+                    <div class="metric-value" id="speedMetric">0.0</div>
+                    <div class="metric-label">km/h</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">⏸️</div>
+                    <div class="metric-value" id="pausesMetric">0</div>
+                    <div class="metric-label">Pausen</div>
+                </div>
+            </div>
+
+            <!-- Kot-Konsistenz Slider -->
+            <div class="form-card">
+                <h3 style="color: white; margin-bottom: 20px;">💩 Kot-Konsistenz Bewertung</h3>
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span>Konsistenz:</span>
+                        <span id="poopValue">5 - Normal</span>
+                    </div>
+                    <input type="range" class="slider" id="poopSlider" min="1" max="10" value="5">
+                    <div class="slider-labels">
+                        <span>1 - Flüssig</span>
+                        <span>5 - Normal</span>
+                        <span>10 - Steinhart</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamische Metriken -->
+            <div class="form-card">
+                <h3 style="color: white; margin-bottom: 20px;">📊 Weitere Beobachtungen</h3>
+                <div id="dynamicObservations">
+                    <div class="form-group">
+                        <label class="form-label">🧘 Stimmung des Hundes</label>
+                        <select class="form-control">
+                            <option>Entspannt</option>
+                            <option>Aufgeregt</option>
+                            <option>Ängstlich</option>
+                            <option>Aggressiv</option>
+                            <option>Müde</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🔋 Energielevel</label>
+                        <input type="range" class="slider" min="1" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🐶 Getroffene Hundefreunde</label>
+                        <div id="dogFriendsList">
+                            <!-- Dynamisch gefüllt -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Karte -->
+            <div class="form-card">
+                <h3 style="color: white; margin-bottom: 20px;">🗺️ Route</h3>
+                <div id="map"></div>
+            </div>
+        </section>
+
+        <!-- Checklisten Section -->
+        <section id="checklists" class="content-section">
+            <h1 style="color: white; font-size: 2.5rem; margin-bottom: 30px;">
+                ✅ Gassi-Checklisten
+            </h1>
+
+            <!-- Priorität 1: MUSS -->
+            <div class="checklist-container">
+                <div class="checklist-header">
+                    <div class="checklist-title">
+                        <span class="priority-badge priority-must">🔴 MUSS</span>
+                        <span>Sicherheit & Grundbedürfnisse</span>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="must1">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🧰 Utensilien & Gegenstände</div>
+                        <div class="checklist-item-desc">Leine, Geschirr/Halsband, Kotbeutel, GPS-Tracker, Taschenlampe</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="must2">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">⚕️ Krankheiten & Allergien</div>
+                        <div class="checklist-item-desc">Medikamentengabe, Allergien beachten, Bewegungseinschränkungen</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="must3">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🚸 Sicherheit & Umweltreize</div>
+                        <div class="checklist-item-desc">Straßenverkehr, Schleppleine, Hundebegegnungen, Geräusche</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="must4">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🧼 Pflege & Hygiene</div>
+                        <div class="checklist-item-desc">Fellkontrolle, Zeckencheck, Pfoten waschen (Streusalz)</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="must5">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🚨 Notfallmanagement</div>
+                        <div class="checklist-item-desc">Tierarztnummer, Erste-Hilfe-Set, Maulkorbtraining</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="must6">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🧍‍♂️ Beziehungsarbeit & Bindung</div>
+                        <div class="checklist-item-desc">Blickkontakt, Lob, Nähe, gemeinsame Interaktion</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priorität 2: SOLL -->
+            <div class="checklist-container">
+                <div class="checklist-header">
+                    <div class="checklist-title">
+                        <span class="priority-badge priority-should">🟠 SOLL</span>
+                        <span>Erziehung & Struktur</span>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="should1">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🧠 Übungen & Training</div>
+                        <div class="checklist-item-desc">Rückruf, Leinenführigkeit, Sitz/Platz, Impulskontrolle</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="should2">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🗣️ Kommunikation & Signale</div>
+                        <div class="checklist-item-desc">Sichtzeichen, Sprachkommandos, Körpersprache, klare Konsequenzen</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="should3">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">📚 Lernstand & Wiederholung</div>
+                        <div class="checklist-item-desc">Was wurde zuletzt geübt? Welche Signale müssen gefestigt werden?</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="should4">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🦴 Bedürfnisse & Instinkte</div>
+                        <div class="checklist-item-desc">Markieren, Buddeln, Jagdverhalten, Ruhebedürfnis ausgleichen</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="should5">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🛡️ Regeln & Grenzen</div>
+                        <div class="checklist-item-desc">Kein Müll/Futter vom Boden, Abstand zu Passanten/Hunden</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="should6">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🧩 Problemverhalten & Reaktionen</div>
+                        <div class="checklist-item-desc">Aggression, Angst, Unsicherheiten – Training & Management</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priorität 3: KANN -->
+            <div class="checklist-container">
+                <div class="checklist-header">
+                    <div class="checklist-title">
+                        <span class="priority-badge priority-can">🟡 KANN</span>
+                        <span>Auslastung & Motivation</span>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="can1">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🎯 Auslastung & Intelligenz</div>
+                        <div class="checklist-item-desc">Schnüffelspiele, Apportieren, Tricktraining, Suchspiele</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="can2">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🗺️ Runden & Einheiten</div>
+                        <div class="checklist-item-desc">Abwechslung in Länge & Route, Geländeart variieren</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="can3">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🐶 Hundefreunde & Hundegruppen</div>
+                        <div class="checklist-item-desc">Sozialkontakte pflegen, Gruppenspaziergänge</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="can4">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🍖 Leckerli & Proviant</div>
+                        <div class="checklist-item-desc">Trainingssnacks, Diätfutter, Wasser für unterwegs</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="can5">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">📱 Technik & Assistenztools</div>
+                        <div class="checklist-item-desc">GPS, Tracking-Apps, Trainings-Logbuch</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priorität 4: INDIVIDUELL -->
+            <div class="checklist-container">
+                <div class="checklist-header">
+                    <div class="checklist-title">
+                        <span class="priority-badge priority-individual">🟢 INDIVIDUELL</span>
+                        <span>Lebensstil & Umfeld</span>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="ind1">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🌦️ Wetter & Jahreszeit</div>
+                        <div class="checklist-item-desc">Kälte, Hitze, Schnee, Dunkelheit, Kleidung & Pfotenschutz</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="ind2">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🕒 Tageszeit & Routine</div>
+                        <div class="checklist-item-desc">Morgens/abends, vor/nach dem Füttern, fester Rhythmus</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="ind3">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">👣 Bewegung & Tempo</div>
+                        <div class="checklist-item-desc">Spazieren, Joggen, Pausen – an Alter und Rasse anpassen</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="ind4">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🔋 Energielevel & Tagesform</div>
+                        <div class="checklist-item-desc">Müde, aufgeregt, gelangweilt? Route & Dauer flexibel wählen</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="ind5">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">🧒 Kind & Hund-Interaktion</div>
+                        <div class="checklist-item-desc">Verhalten mit Kindern, Beaufsichtigung, kindgerechte Kommunikation</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="ind6">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">📊 Dokumentation & Reflexion</div>
+                        <div class="checklist-item-desc">Tagesbericht, Stimmung, Auffälligkeiten, Trainingserfolg notieren</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Management Section -->
+        <section id="management" class="content-section">
+            <h1 style="color: white; font-size: 2.5rem; margin-bottom: 30px;">
+                🎯 Verwaltung & Organisation
+            </h1>
+
+            <div class="dashboard-grid">
+                <!-- Utensilien -->
+                <div class="form-card">
+                    <h3 style="color: white; margin-bottom: 20px;">🧰 Utensilien verwalten</h3>
+                    <div class="form-group">
+                        <label class="form-label">Neues Utensil hinzufügen</label>
+                        <input type="text" class="form-control" id="utensilName" placeholder="z.B. Flexileine 5m">
+                    </div>
+                    <button class="btn" onclick="addItem('utensil')">Hinzufügen</button>
+                    <div id="utensilsList" style="margin-top: 20px;">
+                        <!-- Liste der Utensilien -->
+                    </div>
+                </div>
+
+                <!-- Routen -->
+                <div class="form-card">
+                    <h3 style="color: white; margin-bottom: 20px;">🗺️ Routen verwalten</h3>
+                    <div class="form-group">
+                        <label class="form-label">Neue Route hinzufügen</label>
+                        <input type="text" class="form-control" id="routeName" placeholder="z.B. Waldspaziergang">
+                    </div>
+                    <button class="btn" onclick="addItem('route')">Hinzufügen</button>
+                    <div id="routesList" style="margin-top: 20px;">
+                        <!-- Liste der Routen -->
+                    </div>
+                </div>
+
+                <!-- Hundefreunde -->
+                <div class="form-card">
+                    <h3 style="color: white; margin-bottom: 20px;">🐶 Hundefreunde verwalten</h3>
+                    <div class="form-group">
+                        <label class="form-label">Neuen Hundefreund hinzufügen</label>
+                        <input type="text" class="form-control" id="dogFriendName" placeholder="z.B. Bello (Frau Müller)">
+                    </div>
+                    <button class="btn" onclick="addItem('dogFriend')">Hinzufügen</button>
+                    <div id="dogFriendsList" style="margin-top: 20px;">
+                        <!-- Liste der Hundefreunde -->
+                    </div>
+                </div>
+
+                <!-- Leckerli -->
+                <div class="form-card">
+                    <h3 style="color: white; margin-bottom: 20px;">🍖 Leckerli verwalten</h3>
+                    <div class="form-group">
+                        <label class="form-label">Neues Leckerli hinzufügen</label>
+                        <input type="text" class="form-control" id="treatName" placeholder="z.B. Käsewürfel">
+                    </div>
+                    <button class="btn" onclick="addItem('treat')">Hinzufügen</button>
+                    <div id="treatsList" style="margin-top: 20px;">
+                        <!-- Liste der Leckerli -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Training Section -->
+        <section id="training" class="content-section">
+            <h1 style="color: white; font-size: 2.5rem; margin-bottom: 30px;">
+                🧠 Training & Übungen
+            </h1>
+
+            <div class="form-card">
+                <h3 style="color: white; margin-bottom: 20px;">📚 Trainingsplan</h3>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="train1">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">Grundgehorsam</div>
+                        <div class="checklist-item-desc">Sitz, Platz, Bleib, Aus</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="train2">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">Leinenführigkeit</div>
+                        <div class="checklist-item-desc">Lockere Leine, Richtungswechsel</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="train3">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">Rückruf</div>
+                        <div class="checklist-item-desc">Sicherer Rückruf aus verschiedenen Situationen</div>
+                    </div>
+                </div>
+
+                <div class="checklist-item">
+                    <input type="checkbox" id="train4">
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">Impulskontrolle</div>
+                        <div class="checklist-item-desc">Warten, ruhig bleiben, Frustrationstoleranz</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <h3 style="color: white; margin-bottom: 20px;">🎯 Neue Übung hinzufügen</h3>
+                <div class="form-group">
+                    <label class="form-label">Übungsname</label>
+                    <input type="text" class="form-control" id="exerciseName" placeholder="z.B. Pfote geben">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Schwierigkeit</label>
+                    <select class="form-control">
+                        <option>Einfach</option>
+                        <option>Mittel</option>
+                        <option>Schwer</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="addItem('exercise')">Übung hinzufügen</button>
+            </div>
+        </section>
+
+        <!-- Health Section -->
+        <section id="health" class="content-section">
+            <h1 style="color: white; font-size: 2.5rem; margin-bottom: 30px;">
+                ⚕️ Gesundheit & Pflege
+            </h1>
+
+            <div class="dashboard-grid">
+                <div class="form-card">
+                    <h3 style="color: white; margin-bottom: 20px;">💊 Medikamente</h3>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="med1">
+                        <div class="checklist-item-content">
+                            <div class="checklist-item-title">Zeckenschutz</div>
+                            <div class="checklist-item-desc">Nächste Gabe: in 14 Tagen</div>
+                        </div>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="med2">
+                        <div class="checklist-item-content">
+                            <div class="checklist-item-title">Wurmkur</div>
+                            <div class="checklist-item-desc">Nächste Gabe: in 2 Monaten</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3 style="color: white; margin-bottom: 20px;">🌺 Allergien & Unverträglichkeiten</h3>
+                    <div class="form-group">
+                        <label class="form-label">Neue Allergie hinzufügen</label>
+                        <input type="text" class="form-control" id="allergyName" placeholder="z.B. Gräserpollen">
+                    </div>
+                    <button class="btn" onclick="addItem('allergy')">Hinzufügen</button>
+                    <div id="allergiesList" style="margin-top: 20px;">
+                        <!-- Liste der Allergien -->
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3 style="color: white; margin-bottom: 20px;">🩺 Tierarztbesuche</h3>
+                    <div class="activity-item">
+                        <div class="activity-icon">🏥</div>
+                        <div class="activity-content">
+                            <div>Letzte Untersuchung</div>
+                            <div class="activity-time">vor 3 Monaten</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-warning" style="margin-top: 15px;">Termin planen</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Globale Variablen
+        let appData = {
+            gassiRounds: [],
+            activeRound: null,
+            items: {
+                utensils: [],
+                routes: [],
+                dogFriends: [],
+                treats: [],
+                exercises: [],
+                allergies: []
+            },
+            statistics: {
+                todayRounds: 0,
+                todayDistance: 0,
+                todayMinutes: 0,
+                weekData: [0, 0, 0, 0, 0, 0, 0]
+            }
+        };
+
+        // Timer Variablen
+        let timerInterval = null;
+        let startTime = null;
+        let elapsedTime = 0;
+        let isPaused = false;
+        let pauseCount = 0;
+
+        // Map Variablen
+        let map = null;
+        let routePath = [];
+        let routeLine = null;
+        let currentMarker = null;
+        let gpsInterval = null;
+
+        // Chart Variable
+        let weekChart = null;
+
+        // Initialisierung
+        window.onload = function() {
+            loadData();
+            initializeMap();
+            initializeChart();
+            updateDashboard();
+            updateAllLists();
+            setupEventListeners();
+        };
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Poop Slider
+            const poopSlider = document.getElementById('poopSlider');
+            if (poopSlider) {
+                poopSlider.addEventListener('input', function() {
+                    const value = this.value;
+                    const descriptions = {
+                        1: 'Sehr weich/flüssig',
+                        2: 'Weich mit wenig Form',
+                        3: 'Weich aber geformt',
+                        4: 'Gut geformt, feucht',
+                        5: 'Normal, optimal',
+                        6: 'Fest, trocken',
+                        7: 'Sehr fest',
+                        8: 'Hart, trocken',
+                        9: 'Sehr hart',
+                        10: 'Steinhart'
+                    };
+                    document.getElementById('poopValue').textContent = `${value} - ${descriptions[value]}`;
+                });
+            }
+
+            // Checklist Items
+            document.querySelectorAll('.checklist-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    saveChecklistState();
+                    updateProgress();
+                });
+            });
+        }
+
+        // Navigation
+        function showSection(sectionId) {
+            // Alle Sections verstecken
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Alle Nav Items deaktivieren
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Aktive Section zeigen
+            document.getElementById(sectionId).classList.add('active');
+
+            // Aktives Nav Item markieren
+            event.target.classList.add('active');
+
+            // Spezielle Aktionen je nach Section
+            if (sectionId === 'dashboard') {
+                updateDashboard();
+            } else if (sectionId === 'gassi' && !map) {
+                setTimeout(initializeMap, 100);
+            }
+        }
+
+        // Quick Start Gassi
+        function quickStartGassi() {
+            showSection('gassi');
+            setTimeout(() => startGassi(), 500);
+        }
+
+        // Daten laden/speichern
+        function loadData() {
+            const saved = localStorage.getItem('gassiAppData');
+            if (saved) {
+                appData = JSON.parse(saved);
+            }
+
+            // Checklist States laden
+            loadChecklistStates();
+        }
+
+        function saveData() {
+            localStorage.setItem('gassiAppData', JSON.stringify(appData));
+        }
+
+        // Dashboard Updates
+        function updateDashboard() {
+            // Statistiken aktualisieren
+            document.querySelector('#dashboard .mini-stat-value').textContent = appData.statistics.todayRounds;
+            document.querySelectorAll('#dashboard .mini-stat-value')[1].textContent = appData.statistics.todayDistance.toFixed(1);
+            document.querySelectorAll('#dashboard .mini-stat-value')[2].textContent = appData.statistics.todayMinutes;
+
+            // Activity Feed aktualisieren
+            updateActivityFeed();
+
+            // Chart aktualisieren
+            updateWeekChart();
+        }
+
+        // Activity Feed
+        function updateActivityFeed() {
+            const feed = document.getElementById('activityFeed');
+            if (!feed) return;
+
+            feed.innerHTML = '';
+
+            if (appData.gassiRounds.length === 0) {
+                feed.innerHTML = `
+                    <div class="activity-item">
+                        <div class="activity-icon">🚶</div>
+                        <div class="activity-content">
+                            <div>Noch keine Gassi-Runden heute</div>
+                            <div class="activity-time">Starte deine erste Runde!</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Letzte 5 Aktivitäten anzeigen
+            appData.gassiRounds.slice(-5).reverse().forEach(round => {
+                const date = new Date(round.startTime);
+                const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = date.toLocaleDateString('de-DE');
+
+                feed.innerHTML += `
+                    <div class="activity-item">
+                        <div class="activity-icon">🐕</div>
+                        <div class="activity-content">
+                            <div>Gassi-Runde: ${round.distance.toFixed(1)} km in ${round.duration} min</div>
+                            <div class="activity-time">${dateStr} um ${timeStr}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Chart Initialisierung
+        function initializeChart() {
+            const ctx = document.getElementById('weekChart');
+            if (!ctx) return;
+
+            weekChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+                    datasets: [{
+                        label: 'Gassi-Runden',
+                        data: appData.statistics.weekData,
+                        backgroundColor: 'rgba(255, 230, 109, 0.6)',
+                        borderColor: 'rgba(255, 230, 109, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.8)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.8)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateWeekChart() {
+            if (weekChart) {
+                weekChart.data.datasets[0].data = appData.statistics.weekData;
+                weekChart.update();
+            }
+        }
+
+        // Gassi-Funktionen
+        function startGassi() {
+            if (!isPaused) {
+                startTime = Date.now();
+                elapsedTime = 0;
+                routePath = [];
+                pauseCount = 0;
+
+                appData.activeRound = {
+                    id: Date.now(),
+                    startTime: new Date().toISOString(),
+                    route: [],
+                    distance: 0,
+                    steps: 0,
+                    pauseCount: 0,
+                    poopConsistency: 5,
+                    observations: {}
+                };
+
+                // GPS Tracking starten
+                startGPSTracking();
+            } else {
+                isPaused = false;
+            }
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+
+            startTimer();
+            simulateMetrics();
+        }
+
+        function pauseGassi() {
+            isPaused = true;
+            pauseCount++;
+            document.getElementById('pausesMetric').textContent = pauseCount;
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').innerHTML = '▶️ WEITER';
+            document.getElementById('pauseBtn').disabled = true;
+
+            clearInterval(timerInterval);
+        }
+
+        function stopGassi() {
+            clearInterval(timerInterval);
+            clearInterval(gpsInterval);
+
+            if (appData.activeRound) {
+                // Runde abschließen
+                appData.activeRound.endTime = new Date().toISOString();
+                appData.activeRound.duration = Math.floor(elapsedTime / 60000); // Minuten
+                appData.activeRound.pauseCount = pauseCount;
+                appData.activeRound.distance = parseFloat(document.getElementById('distanceMetric').textContent);
+                appData.activeRound.steps = parseInt(document.getElementById('stepsMetric').textContent);
+                appData.activeRound.poopConsistency = document.getElementById('poopSlider').value;
+
+                // Runde speichern
+                appData.gassiRounds.push(appData.activeRound);
+
+                // Statistiken aktualisieren
+                appData.statistics.todayRounds++;
+                appData.statistics.todayDistance += appData.activeRound.distance;
+                appData.statistics.todayMinutes += appData.activeRound.duration;
+
+                // Wochentag ermitteln und updaten
+                const dayOfWeek = new Date().getDay();
+                const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mo=0, So=6
+                appData.statistics.weekData[dayIndex]++;
+
+                appData.activeRound = null;
+                saveData();
+
+                // UI Reset
+                resetGassiUI();
+
+                // Erfolgsmeldung
+                showNotification('Gassi-Runde erfolgreich gespeichert! 🎉');
+
+                // Dashboard aktualisieren
+                updateDashboard();
+            }
+        }
+
+        function resetGassiUI() {
+            document.getElementById('timerDisplay').textContent = '00:00:00';
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').innerHTML = '▶️ START';
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+
+            // Metriken zurücksetzen
+            document.getElementById('distanceMetric').textContent = '0.00';
+            document.getElementById('stepsMetric').textContent = '0';
+            document.getElementById('speedMetric').textContent = '0.0';
+            document.getElementById('pausesMetric').textContent = '0';
+        }
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    elapsedTime = Date.now() - startTime;
+                    const hours = Math.floor(elapsedTime / 3600000);
+                    const minutes = Math.floor((elapsedTime % 3600000) / 60000);
+                    const seconds = Math.floor((elapsedTime % 60000) / 1000);
+
+                    document.getElementById('timerDisplay').textContent =
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 100);
+        }
+
+        // Map Initialisierung
+        function initializeMap() {
+            if (!document.getElementById('map')) return;
+
+            if (map) {
+                map.remove();
+            }
+
+            map = L.map('map').setView([51.0504, 13.7373], 13); // Dresden
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        // GPS Tracking
+        function startGPSTracking() {
+            if (navigator.geolocation) {
+                // Sofort erste Position holen
+                navigator.geolocation.getCurrentPosition(updatePosition);
+
+                // Dann alle 30 Sekunden updaten
+                gpsInterval = setInterval(() => {
+                    navigator.geolocation.getCurrentPosition(updatePosition);
+                }, 30000);
+            }
+        }
+
+        function updatePosition(position) {
+            if (!appData.activeRound || !map) return;
+
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            routePath.push([lat, lng]);
+            appData.activeRound.route.push({ lat, lng, timestamp: new Date().toISOString() });
+
+            // Route auf Karte aktualisieren
+            if (routeLine) {
+                map.removeLayer(routeLine);
+            }
+
+            routeLine = L.polyline(routePath, {
+                color: '#e74c3c',
+                weight: 4,
+                opacity: 0.8
+            }).addTo(map);
+
+            // Marker aktualisieren
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+
+            currentMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    html: '🐕',
+                    iconSize: [30, 30],
+                    className: 'dog-marker'
+                })
+            }).addTo(map);
+
+            map.setView([lat, lng], 15);
+
+            // Distanz berechnen
+            if (routePath.length > 1) {
+                let totalDistance = 0;
+                for (let i = 1; i < routePath.length; i++) {
+                    totalDistance += calculateDistance(
+                        routePath[i-1][0], routePath[i-1][1],
+                        routePath[i][0], routePath[i][1]
+                    );
+                }
+                document.getElementById('distanceMetric').textContent = totalDistance.toFixed(2);
+
+                // Geschwindigkeit berechnen
+                const hours = elapsedTime / 3600000;
+                const speed = hours > 0 ? totalDistance / hours : 0;
+                document.getElementById('speedMetric').textContent = speed.toFixed(1);
+            }
+        }
+
+        // Distanz berechnen (Haversine)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Erdradius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Metriken simulieren
+        function simulateMetrics() {
+            setInterval(() => {
+                if (!isPaused && appData.activeRound) {
+                    // Schritte simulieren (ca. 2 pro Sekunde)
+                    const steps = parseInt(document.getElementById('stepsMetric').textContent);
+                    document.getElementById('stepsMetric').textContent = steps + 2;
+
+                    // Wenn kein GPS, Distanz simulieren
+                    if (routePath.length === 0) {
+                        const distance = parseFloat(document.getElementById('distanceMetric').textContent);
+                        const newDistance = distance + 0.001; // ~3.6 km/h
+                        document.getElementById('distanceMetric').textContent = newDistance.toFixed(2);
+
+                        const hours = elapsedTime / 3600000;
+                        const speed = hours > 0 ? newDistance / hours : 0;
+                        document.getElementById('speedMetric').textContent = speed.toFixed(1);
+                    }
+                }
+            }, 1000);
+        }
+
+        // Items Management
+        function addItem(type) {
+            let name, inputId, listId;
+
+            switch(type) {
+                case 'utensil':
+                    inputId = 'utensilName';
+                    listId = 'utensilsList';
+                    break;
+                case 'route':
+                    inputId = 'routeName';
+                    listId = 'routesList';
+                    break;
+                case 'dogFriend':
+                    inputId = 'dogFriendName';
+                    listId = 'dogFriendsList';
+                    break;
+                case 'treat':
+                    inputId = 'treatName';
+                    listId = 'treatsList';
+                    break;
+                case 'exercise':
+                    inputId = 'exerciseName';
+                    listId = 'exercisesList';
+                    break;
+                case 'allergy':
+                    inputId = 'allergyName';
+                    listId = 'allergiesList';
+                    break;
+            }
+
+            const input = document.getElementById(inputId);
+            if (!input || !input.value.trim()) return;
+
+            name = input.value.trim();
+
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                created: new Date().toISOString()
+            };
+
+            if (!appData.items[type + 's']) {
+                appData.items[type + 's'] = [];
+            }
+
+            appData.items[type + 's'].push(newItem);
+            saveData();
+
+            input.value = '';
+            updateList(type + 's', listId);
+
+            showNotification(`${name} wurde hinzugefügt!`);
+        }
+
+        // Listen aktualisieren
+        function updateAllLists() {
+            updateList('utensils', 'utensilsList');
+            updateList('routes', 'routesList');
+            updateList('dogFriends', 'dogFriendsList');
+            updateList('treats', 'treatsList');
+            updateList('exercises', 'exercisesList');
+            updateList('allergies', 'allergiesList');
+        }
+
+        function updateList(type, listId) {
+            const list = document.getElementById(listId);
+            if (!list) return;
+
+            list.innerHTML = '';
+
+            if (!appData.items[type] || appData.items[type].length === 0) {
+                list.innerHTML = '<div style="color: rgba(255,255,255,0.5);">Noch keine Einträge</div>';
+                return;
+            }
+
+            appData.items[type].forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'checklist-item';
+                itemDiv.innerHTML = `
+                    <div class="checklist-item-content">
+                        <div class="checklist-item-title">${item.name}</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteItem('${type}', ${item.id})">❌</button>
+                `;
+                list.appendChild(itemDiv);
+            });
+        }
+
+        function deleteItem(type, id) {
+            if (confirm('Wirklich löschen?')) {
+                appData.items[type] = appData.items[type].filter(item => item.id !== id);
+                saveData();
+                updateAllLists();
+            }
+        }
+
+        // Checklist Management
+        function saveChecklistState() {
+            const checklistStates = {};
+            document.querySelectorAll('.checklist-item input[type="checkbox"]').forEach(cb => {
+                checklistStates[cb.id] = cb.checked;
+            });
+            localStorage.setItem('checklistStates', JSON.stringify(checklistStates));
+        }
+
+        function loadChecklistStates() {
+            const saved = localStorage.getItem('checklistStates');
+            if (saved) {
+                const states = JSON.parse(saved);
+                Object.keys(states).forEach(id => {
+                    const checkbox = document.getElementById(id);
+                    if (checkbox) {
+                        checkbox.checked = states[id];
+                    }
+                });
+            }
+        }
+
+        function updateProgress() {
+            // Progress-Anzeige könnte hier implementiert werden
+        }
+
+        // Benachrichtigungen
+        function showNotification(message) {
+            // Einfache Alert-Implementierung
+            // Könnte durch eine schönere Notification ersetzt werden
+            alert(message);
+        }
+    </script>
+</body>
+</html>
