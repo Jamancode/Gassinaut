@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hundegassi Deluxe Planer</title>
+    <style>
+        /* Globale Stile */
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #FFC107;
+            --accent-color: #03A9F4;
+            --bg-color: #f4f4f4;
+            --text-color: #333;
+            --card-bg: #fff;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            flex-grow: 1;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5em 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            letter-spacing: 1px;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #333;
+            padding: 0.5em 0;
+        }
+        nav button {
+            background-color: transparent;
+            color: white;
+            border: none;
+            padding: 0.8em 1.5em;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, color 0.3s;
+            border-radius: 4px;
+            margin: 0 5px;
+        }
+        nav button:hover, nav button.active {
+            background-color: var(--secondary-color);
+            color: #333;
+        }
+
+        /* Formularstile */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: var(--border-radius);
+            border: 1px solid #ddd;
+        }
+        form label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        form input[type="text"],
+        form input[type="date"],
+        form input[type="time"],
+        form input[type="number"],
+        form select,
+        form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        form textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        form button[type="submit"], .action-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        form button[type="submit"]:hover, .action-button:hover {
+            background-color: #3e8e41;
+        }
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .delete-button:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Sektionen / Tabs */
+        .tab-content {
+            display: none;
+            padding-top: 20px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h3 {
+            color: #555;
+            margin-top: 25px;
+        }
+
+        /* Listen / Karten */
+        .data-list {
+            list-style: none;
+            padding: 0;
+        }
+        .data-list li {
+            background-color: #fff;
+            border: 1px solid #eee;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .data-list li strong {
+            color: var(--primary-color);
+        }
+        .data-list li .actions {
+            margin-top: 10px;
+            align-self: flex-end;
+        }
+        .data-list li .dog-photo-preview {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-top: 10px;
+        }
+
+
+        /* Statistiken */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .stat-card {
+            background-color: #eef;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: var(--box-shadow);
+        }
+        .stat-card h4 {
+            margin-top: 0;
+            color: var(--accent-color);
+        }
+        .stat-card p {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 10px 0 0 0;
+            color: var(--text-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+            }
+            nav button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            header h1 {
+                font-size: 1.8em;
+            }
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+            form {
+                padding: 15px;
+            }
+        }
+
+        /* Import/Export */
+        .import-export-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f0f8ff;
+            border-radius: var(--border-radius);
+        }
+        .import-export-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .import-export-section input[type="file"] {
+            margin-bottom: 15px;
+        }
+        .file-input-wrapper {
+            border: 2px dashed var(--accent-color);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .file-input-wrapper:hover {
+            background-color: #e6f7ff;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid var(--primary-color); /* Blue */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none !important;
+        }
+        .dog-image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐾 Hundegassi Deluxe Planer 🐾</h1>
+    </header>
+
+    <nav id="mainNav">
+        <button data-tab="dogs" class="active">Hundeprofile</button>
+        <button data-tab="walks">Gassi-Protokoll</button>
+        <button data-tab="training">Training</button>
+        <button data-tab="stats">Statistiken</button>
+        <button data-tab="data">Daten Import/Export</button>
+    </nav>
+
+    <div class="container">
+        <!-- Hundeprofile Tab -->
+        <div id="dogs" class="tab-content active">
+            <h2>Hundeprofile Verwalten</h2>
+            <form id="addDogForm">
+                <h3>Neuen Hund hinzufügen/bearbeiten</h3>
+                <input type="hidden" id="dogId">
+                <label for="dogName">Name:</label>
+                <input type="text" id="dogName" required>
+
+                <label for="dogBreed">Rasse:</label>
+                <input type="text" id="dogBreed">
+
+                <label for="dogBirthDate">Geburtstag:</label>
+                <input type="date" id="dogBirthDate">
+                
+                <label for="dogColor">Farbe:</label>
+                <input type="text" id="dogColor">
+
+                <label for="dogWeight">Gewicht (kg):</label>
+                <input type="number" id="dogWeight" step="0.1">
+
+                <label for="dogChipNr">Chip-Nr.:</label>
+                <input type="text" id="dogChipNr">
+                
+                <label for="dogAllergies">Allergien (kommagetrennt):</label>
+                <input type="text" id="dogAllergies">
+
+                <label for="dogPhoto">Foto:</label>
+                <input type="file" id="dogPhoto" accept="image/*">
+                <img id="dogPhotoPreview" src="#" alt="Vorschau" class="dog-image-preview hidden"/>
+
+
+                <button type="submit" class="action-button">Hund speichern</button>
+            </form>
+
+            <h3>Meine Hunde</h3>
+            <ul id="dogList" class="data-list">
+                <!-- Hundeeinträge werden hier per JS eingefügt -->
+            </ul>
+        </div>
+
+        <!-- Gassi-Protokoll Tab -->
+        <div id="walks" class="tab-content">
+            <h2>Gassi-Protokoll</h2>
+            <form id="addWalkForm">
+                <h3>Neuen Gassi-Gang eintragen/bearbeiten</h3>
+                <input type="hidden" id="walkId">
+                <label for="walkDogId">Hund auswählen:</label>
+                <select id="walkDogId" required>
+                    <!-- Optionen werden per JS gefüllt -->
+                </select>
+
+                <label for="walkDate">Datum:</label>
+                <input type="date" id="walkDate" required>
+
+                <label for="walkStartTime">Startzeit:</label>
+                <input type="time" id="walkStartTime" required>
+
+                <label for="walkEndTime">Endzeit:</label>
+                <input type="time" id="walkEndTime" required>
+                
+                <label for="walkDuration">Dauer (Minuten, auto-berechnet):</label>
+                <input type="number" id="walkDuration" readonly>
+
+                <label for="walkRouteNotes">Routennotizen/Orte:</label>
+                <textarea id="walkRouteNotes"></textarea>
+
+                <label for="walkPoop">Kot abgesetzt?</label>
+                <select id="walkPoop">
+                    <option value="false">Nein</option>
+                    <option value="true">Ja</option>
+                </select>
+
+                <label for="walkPee">Urin abgesetzt?</label>
+                <select id="walkPee">
+                    <option value="false">Nein</option>
+                    <option value="true">Ja</option>
+                </select>
+
+                <label for="walkSocialContacts">Sozialkontakte:</label>
+                <textarea id="walkSocialContacts" placeholder="z.B. Freundlicher Labrador, scheuer Dackel"></textarea>
+
+                <label for="walkTrainingExercises">Trainingsübungen während des Gangs:</label>
+                <textarea id="walkTrainingExercises" placeholder="z.B. Sitz vor Überqueren der Straße (erfolgreich)"></textarea>
+
+                <label for="walkSpecialEvents">Besondere Ereignisse:</label>
+                <textarea id="walkSpecialEvents" placeholder="z.B. Angst vor lauter Baustelle, Spiel mit Ball"></textarea>
+
+                <button type="submit" class="action-button">Gassi-Gang speichern</button>
+            </form>
+
+            <h3>Protokollierte Gassi-Gänge</h3>
+            <ul id="walkList" class="data-list">
+                <!-- Gassi-Einträge werden hier per JS eingefügt -->
+            </ul>
+        </div>
+
+        <!-- Training Tab -->
+        <div id="training" class="tab-content">
+            <h2>Trainingseinheiten</h2>
+            <form id="addTrainingForm">
+                <h3>Neue Trainingseinheit eintragen/bearbeiten</h3>
+                <input type="hidden" id="trainingId">
+                <label for="trainingDogId">Hund auswählen:</label>
+                <select id="trainingDogId" required>
+                    <!-- Optionen werden per JS gefüllt -->
+                </select>
+
+                <label for="trainingDate">Datum:</label>
+                <input type="date" id="trainingDate" required>
+
+                <label for="trainingTrickName">Trick/Kommando:</label>
+                <input type="text" id="trainingTrickName" required>
+
+                <label for="trainingSuccessRating">Erfolgsbewertung (1-5):</label>
+                <input type="number" id="trainingSuccessRating" min="1" max="5" step="1" required>
+
+                <label for="trainingNotes">Notizen:</label>
+                <textarea id="trainingNotes"></textarea>
+
+                <button type="submit" class="action-button">Trainingseinheit speichern</button>
+            </form>
+
+            <h3>Protokollierte Trainingseinheiten</h3>
+            <ul id="trainingList" class="data-list">
+                <!-- Trainingseinträge werden hier per JS eingefügt -->
+            </ul>
+        </div>
+
+        <!-- Statistiken Tab -->
+        <div id="stats" class="tab-content">
+            <h2>Statistiken & Auswertungen</h2>
+            <label for="statsDogSelect">Statistiken für Hund:</label>
+            <select id="statsDogSelect">
+                <option value="all">Alle Hunde</option>
+                <!-- Optionen werden per JS gefüllt -->
+            </select>
+            <button id="generateStatsButton" class="action-button" style="margin-top:10px; margin-bottom: 20px;">Statistiken generieren</button>
+
+            <div id="statsOutput" class="stats-grid">
+                <!-- Statistiken werden hier angezeigt -->
+            </div>
+             <h3>Gassi-Kalender (einfach)</h3>
+            <div id="walkCalendar" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 15px;">
+                <!-- Kalenderansicht wird hier generiert -->
+            </div>
+        </div>
+
+        <!-- Daten Import/Export Tab -->
+        <div id="data" class="tab-content">
+            <h2>Daten Import & Export</h2>
+            <div class="import-export-section">
+                <h3>Daten Exportieren (CSV)</h3>
+                <p>Sichere deine Daten oder übertrage sie auf ein anderes Gerät.</p>
+                <button id="exportDataButton" class="action-button">Alle Daten als CSV exportieren <span id="exportSpinner" class="loading-spinner hidden"></span></button>
+            </div>
+
+            <div class="import-export-section">
+                <h3>Daten Importieren (CSV)</h3>
+                <p><strong>Achtung:</strong> Der Import überschreibt möglicherweise vorhandene Daten, je nach Implementierung. Sicherungsdatei wird empfohlen!</p>
+                <label for="csvFileDogs">Hunde CSV-Datei:</label>
+                <input type="file" id="csvFileDogs" accept=".csv">
+
+                <label for="csvFileWalks">Gassi-Gänge CSV-Datei:</label>
+                <input type="file" id="csvFileWalks" accept=".csv">
+
+                <label for="csvFileTraining">Training CSV-Datei:</label>
+                <input type="file" id="csvFileTraining" accept=".csv">
+                
+                <button id="importDataButton" class="action-button">Ausgewählte CSV-Dateien importieren <span id="importSpinner" class="loading-spinner hidden"></span></button>
+                <p id="importStatus"></p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 Dein Hundegassi Planer - Mit ❤️ gemacht.</p>
+    </footer>
+
+    <script>
+        // --- Globale Variablen und Initialisierung ---
+        const DB_KEY = 'dogAppData';
+        let appData = {
+            dogs: [],
+            walks: [],
+            training: [],
+            settings: {}
+        };
+
+        // --- DOM Elemente ---
+        const mainNav = document.getElementById('mainNav');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Hundeprofile
+        const addDogForm = document.getElementById('addDogForm');
+        const dogIdInput = document.getElementById('dogId');
+        const dogNameInput = document.getElementById('dogName');
+        const dogBreedInput = document.getElementById('dogBreed');
+        const dogBirthDateInput = document.getElementById('dogBirthDate');
+        const dogColorInput = document.getElementById('dogColor');
+        const dogWeightInput = document.getElementById('dogWeight');
+        const dogChipNrInput = document.getElementById('dogChipNr');
+        const dogAllergiesInput = document.getElementById('dogAllergies');
+        const dogPhotoInput = document.getElementById('dogPhoto');
+        const dogPhotoPreview = document.getElementById('dogPhotoPreview');
+        const dogList = document.getElementById('dogList');
+
+        // Gassi-Protokoll
+        const addWalkForm = document.getElementById('addWalkForm');
+        const walkIdInput = document.getElementById('walkId');
+        const walkDogIdSelect = document.getElementById('walkDogId');
+        const walkDateInput = document.getElementById('walkDate');
+        const walkStartTimeInput = document.getElementById('walkStartTime');
+        const walkEndTimeInput = document.getElementById('walkEndTime');
+        const walkDurationInput = document.getElementById('walkDuration');
+        const walkRouteNotesInput = document.getElementById('walkRouteNotes');
+        const walkPoopSelect = document.getElementById('walkPoop');
+        const walkPeeSelect = document.getElementById('walkPee');
+        const walkSocialContactsInput = document.getElementById('walkSocialContacts');
+        const walkTrainingExercisesInput = document.getElementById('walkTrainingExercises');
+        const walkSpecialEventsInput = document.getElementById('walkSpecialEvents');
+        const walkList = document.getElementById('walkList');
+        
+        // Training
+        const addTrainingForm = document.getElementById('addTrainingForm');
+        const trainingIdInput = document.getElementById('trainingId');
+        const trainingDogIdSelect = document.getElementById('trainingDogId');
+        const trainingDateInput = document.getElementById('trainingDate');
+        const trainingTrickNameInput = document.getElementById('trainingTrickName');
+        const trainingSuccessRatingInput = document.getElementById('trainingSuccessRating');
+        const trainingNotesInput = document.getElementById('trainingNotes');
+        const trainingList = document.getElementById('trainingList');
+
+        // Statistiken
+        const statsDogSelect = document.getElementById('statsDogSelect');
+        const generateStatsButton = document.getElementById('generateStatsButton');
+        const statsOutput = document.getElementById('statsOutput');
+        const walkCalendar = document.getElementById('walkCalendar');
+
+        // Daten Import/Export
+        const exportDataButton = document.getElementById('exportDataButton');
+        const importDataButton = document.getElementById('importDataButton');
+        const csvFileDogsInput = document.getElementById('csvFileDogs');
+        const csvFileWalksInput = document.getElementById('csvFileWalks');
+        const csvFileTrainingInput = document.getElementById('csvFileTraining');
+        const importStatus = document.getElementById('importStatus');
+        const exportSpinner = document.getElementById('exportSpinner');
+        const importSpinner = document.getElementById('importSpinner');
+
+
+        // --- Hilfsfunktionen ---
+        function generateId(prefix = '') {
+            return prefix + Date.now() + Math.random().toString(36).substring(2, 9);
+        }
+
+        function loadData() {
+            const data = localStorage.getItem(DB_KEY);
+            if (data) {
+                appData = JSON.parse(data);
+                // Ensure all parts of appData exist
+                appData.dogs = appData.dogs || [];
+                appData.walks = appData.walks || [];
+                appData.training = appData.training || [];
+                appData.settings = appData.settings || {};
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(DB_KEY, JSON.stringify(appData));
+        }
+        
+        function clearForm(formElement) {
+            formElement.reset();
+            // Reset hidden ID fields specifically
+            const hiddenId = formElement.querySelector('input[type="hidden"]');
+            if (hiddenId) hiddenId.value = '';
+            if (formElement.id === 'addDogForm') {
+                dogPhotoPreview.classList.add('hidden');
+                dogPhotoPreview.src = '#';
+            }
+        }
+
+        function getDogNameById(dogId) {
+            const dog = appData.dogs.find(d => d.id === dogId);
+            return dog ? dog.name : 'Unbekannter Hund';
+        }
+
+        // --- Tab-Navigation ---
+        mainNav.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const tabName = e.target.dataset.tab;
+                activateTab(tabName);
+                
+                // Update active class on buttons
+                mainNav.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+            }
+        });
+
+        function activateTab(tabName) {
+            tabContents.forEach(tab => {
+                if (tab.id === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            if (tabName === 'walks' || tabName === 'training' || tabName === 'stats') {
+                populateDogSelects(); // Update dog selects when these tabs are opened
+            }
+             if (tabName === 'stats') {
+                renderStatistics(); // Initial render for stats
+            }
+        }
+
+        // --- Hundeprofil-Management ---
+        dogPhotoInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    dogPhotoPreview.src = e.target.result;
+                    dogPhotoPreview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                dogPhotoPreview.classList.add('hidden');
+                dogPhotoPreview.src = '#';
+            }
+        });
+        
+        addDogForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const dogId = dogIdInput.value;
+            const dogPhotoData = dogPhotoPreview.src.startsWith('data:image') ? dogPhotoPreview.src : (dogId ? appData.dogs.find(d => d.id === dogId)?.photo : null);
+
+            const dog = {
+                id: dogId || generateId('dog_'),
+                name: dogNameInput.value,
+                breed: dogBreedInput.value,
+                birthDate: dogBirthDateInput.value,
+                color: dogColorInput.value,
+                weight: dogWeightInput.value ? parseFloat(dogWeightInput.value) : null,
+                chipNr: dogChipNrInput.value,
+                allergies: dogAllergiesInput.value.split(',').map(s => s.trim()).filter(s => s),
+                photo: dogPhotoData
+            };
+
+            if (dogId) { // Update
+                const index = appData.dogs.findIndex(d => d.id === dogId);
+                if (index > -1) appData.dogs[index] = dog;
+            } else { // Add new
+                appData.dogs.push(dog);
+            }
+            
+            saveData();
+            renderDogList();
+            populateDogSelects(); // Update selects in other forms
+            clearForm(addDogForm);
+        });
+
+        function renderDogList() {
+            dogList.innerHTML = '';
+            if (appData.dogs.length === 0) {
+                dogList.innerHTML = '<li>Noch keine Hunde hinzugefügt.</li>';
+                return;
+            }
+            appData.dogs.forEach(dog => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <strong>${dog.name}</strong> (${dog.breed || 'Unbekannte Rasse'})
+                    ${dog.photo ? `<img src="${dog.photo}" alt="${dog.name}" class="dog-photo-preview">` : ''}
+                    <p>Geb.: ${dog.birthDate || 'N/A'} | Farbe: ${dog.color || 'N/A'} | Gewicht: ${dog.weight ? dog.weight + ' kg' : 'N/A'}</p>
+                    <p>Chip: ${dog.chipNr || 'N/A'} | Allergien: ${dog.allergies.length > 0 ? dog.allergies.join(', ') : 'Keine bekannt'}</p>
+                    <div class="actions">
+                        <button onclick="editDog('${dog.id}')" class="action-button" style="background-color:var(--accent-color); margin-right:5px;">Bearbeiten</button>
+                        <button onclick="deleteDog('${dog.id}')" class="delete-button">Löschen</button>
+                    </div>
+                `;
+                dogList.appendChild(li);
+            });
+        }
+
+        window.editDog = function(id) { // Make it global for inline onclick
+            const dog = appData.dogs.find(d => d.id === id);
+            if (dog) {
+                dogIdInput.value = dog.id;
+                dogNameInput.value = dog.name;
+                dogBreedInput.value = dog.breed || '';
+                dogBirthDateInput.value = dog.birthDate || '';
+                dogColorInput.value = dog.color || '';
+                dogWeightInput.value = dog.weight || '';
+                dogChipNrInput.value = dog.chipNr || '';
+                dogAllergiesInput.value = dog.allergies ? dog.allergies.join(', ') : '';
+                if (dog.photo) {
+                    dogPhotoPreview.src = dog.photo;
+                    dogPhotoPreview.classList.remove('hidden');
+                } else {
+                    dogPhotoPreview.src = '#';
+                    dogPhotoPreview.classList.add('hidden');
+                }
+                dogNameInput.focus();
+                 // Scroll to form and switch to tab if necessary
+                activateTab('dogs');
+                mainNav.querySelector('button[data-tab="dogs"]').classList.add('active');
+                addDogForm.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        window.deleteDog = function(id) { // Make it global
+            if (confirm(`Sicher, dass du diesen Hund und alle zugehörigen Daten (Gassi-Gänge, Training) löschen möchtest?`)) {
+                appData.dogs = appData.dogs.filter(d => d.id !== id);
+                // Also delete related walks and training
+                appData.walks = appData.walks.filter(w => w.dogId !== id);
+                appData.training = appData.training.filter(t => t.dogId !== id);
+                saveData();
+                renderDogList();
+                renderWalkList();
+                renderTrainingList();
+                populateDogSelects();
+            }
+        }
+        
+        function populateDogSelects() {
+            const selects = [walkDogIdSelect, trainingDogIdSelect, statsDogSelect];
+            selects.forEach(select => {
+                const currentVal = select.value; // Preserve selection if possible
+                select.innerHTML = ''; // Clear existing options
+                 if (select.id === 'statsDogSelect') { // Add 'All' option for stats
+                    const allOption = document.createElement('option');
+                    allOption.value = 'all';
+                    allOption.textContent = 'Alle Hunde';
+                    select.appendChild(allOption);
+                }
+                if (appData.dogs.length === 0 && select.id !== 'statsDogSelect') {
+                     const noDogOption = document.createElement('option');
+                     noDogOption.value = '';
+                     noDogOption.textContent = 'Bitte zuerst einen Hund anlegen';
+                     noDogOption.disabled = true;
+                     select.appendChild(noDogOption);
+                } else {
+                    appData.dogs.forEach(dog => {
+                        const option = document.createElement('option');
+                        option.value = dog.id;
+                        option.textContent = dog.name;
+                        select.appendChild(option);
+                    });
+                }
+                if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+                    select.value = currentVal;
+                } else if (appData.dogs.length > 0 && select.id !== 'statsDogSelect') {
+                     select.value = appData.dogs[0].id; // Select first dog by default if no previous selection
+                } else if (select.id === 'statsDogSelect') {
+                    select.value = 'all'; // Default to 'all' for stats
+                }
+            });
+        }
+
+        // --- Gassi-Protokoll Management ---
+        function calculateWalkDuration() {
+            if (walkStartTimeInput.value && walkEndTimeInput.value) {
+                const startDate = new Date(`1970-01-01T${walkStartTimeInput.value}`);
+                const endDate = new Date(`1970-01-01T${walkEndTimeInput.value}`);
+                let diff = (endDate.getTime() - startDate.getTime()) / (1000 * 60); // in minutes
+                if (diff < 0) diff += 24 * 60; // Handle overnight walks
+                walkDurationInput.value = Math.round(diff);
+            } else {
+                walkDurationInput.value = '';
+            }
+        }
+        walkStartTimeInput.addEventListener('change', calculateWalkDuration);
+        walkEndTimeInput.addEventListener('change', calculateWalkDuration);
+
+        addWalkForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!walkDogIdSelect.value && appData.dogs.length > 0) {
+                alert("Bitte einen Hund auswählen.");
+                return;
+            }
+             if (appData.dogs.length === 0) {
+                alert("Bitte zuerst einen Hund im Reiter 'Hundeprofile' anlegen.");
+                return;
+            }
+            const walkId = walkIdInput.value;
+            const walk = {
+                id: walkId || generateId('walk_'),
+                dogId: walkDogIdSelect.value,
+                date: walkDateInput.value,
+                startTime: walkStartTimeInput.value,
+                endTime: walkEndTimeInput.value,
+                durationMinutes: parseInt(walkDurationInput.value) || 0,
+                routeNotes: walkRouteNotesInput.value,
+                poop: walkPoopSelect.value === 'true',
+                pee: walkPeeSelect.value === 'true',
+                socialContacts: walkSocialContactsInput.value,
+                trainingExercises: walkTrainingExercisesInput.value,
+                specialEvents: walkSpecialEventsInput.value
+            };
+
+            if (walkId) { // Update
+                const index = appData.walks.findIndex(w => w.id === walkId);
+                if (index > -1) appData.walks[index] = walk;
+            } else { // Add new
+                appData.walks.push(walk);
+            }
+            
+            saveData();
+            renderWalkList();
+            clearForm(addWalkForm);
+        });
+
+        function renderWalkList() {
+            walkList.innerHTML = '';
+            if (appData.walks.length === 0) {
+                walkList.innerHTML = '<li>Noch keine Gassi-Gänge protokolliert.</li>';
+                return;
+            }
+            // Sort walks by date and time, most recent first
+            const sortedWalks = [...appData.walks].sort((a,b) => {
+                const dateA = new Date(`${a.date}T${a.startTime}`);
+                const dateB = new Date(`${b.date}T${b.startTime}`);
+                return dateB - dateA;
+            });
+
+            sortedWalks.forEach(walk => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <strong>${new Date(walk.date).toLocaleDateString('de-DE')} ${walk.startTime}-${walk.endTime} (${walk.durationMinutes} Min)</strong> - ${getDogNameById(walk.dogId)}
+                    <p>Route/Orte: ${walk.routeNotes || 'N/A'}</p>
+                    <p>Kot: ${walk.poop ? 'Ja' : 'Nein'} | Urin: ${walk.pee ? 'Ja' : 'Nein'}</p>
+                    <p>Sozialkontakte: ${walk.socialContacts || 'Keine'}</p>
+                    <p>Übungen: ${walk.trainingExercises || 'Keine'}</p>
+                    <p>Ereignisse: ${walk.specialEvents || 'Keine'}</p>
+                    <div class="actions">
+                        <button onclick="editWalk('${walk.id}')" class="action-button" style="background-color:var(--accent-color); margin-right:5px;">Bearbeiten</button>
+                        <button onclick="deleteWalk('${walk.id}')" class="delete-button">Löschen</button>
+                    </div>
+                `;
+                walkList.appendChild(li);
+            });
+        }
+        
+        window.editWalk = function(id) {
+            const walk = appData.walks.find(w => w.id === id);
+            if (walk) {
+                walkIdInput.value = walk.id;
+                walkDogIdSelect.value = walk.dogId;
+                walkDateInput.value = walk.date;
+                walkStartTimeInput.value = walk.startTime;
+                walkEndTimeInput.value = walk.endTime;
+                calculateWalkDuration(); // Recalculate and set duration
+                walkRouteNotesInput.value = walk.routeNotes || '';
+                walkPoopSelect.value = walk.poop ? 'true' : 'false';
+                walkPeeSelect.value = walk.pee ? 'true' : 'false';
+                walkSocialContactsInput.value = walk.socialContacts || '';
+                walkTrainingExercisesInput.value = walk.trainingExercises || '';
+                walkSpecialEventsInput.value = walk.specialEvents || '';
+                
+                activateTab('walks');
+                mainNav.querySelector('button[data-tab="walks"]').classList.add('active');
+                addWalkForm.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        window.deleteWalk = function(id) {
+            if (confirm('Diesen Gassi-Gang wirklich löschen?')) {
+                appData.walks = appData.walks.filter(w => w.id !== id);
+                saveData();
+                renderWalkList();
+            }
+        }
+
+        // --- Training Management ---
+        addTrainingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+             if (!trainingDogIdSelect.value && appData.dogs.length > 0) {
+                alert("Bitte einen Hund auswählen.");
+                return;
+            }
+             if (appData.dogs.length === 0) {
+                alert("Bitte zuerst einen Hund im Reiter 'Hundeprofile' anlegen.");
+                return;
+            }
+            const trainingId = trainingIdInput.value;
+            const training = {
+                id: trainingId || generateId('train_'),
+                dogId: trainingDogIdSelect.value,
+                date: trainingDateInput.value,
+                trickName: trainingTrickNameInput.value,
+                successRating: parseInt(trainingSuccessRatingInput.value),
+                notes: trainingNotesInput.value
+            };
+
+            if (trainingId) { // Update
+                const index = appData.training.findIndex(t => t.id === trainingId);
+                if (index > -1) appData.training[index] = training;
+            } else { // Add new
+                appData.training.push(training);
+            }
+            
+            saveData();
+            renderTrainingList();
+            clearForm(addTrainingForm);
+        });
+
+        function renderTrainingList() {
+            trainingList.innerHTML = '';
+            if (appData.training.length === 0) {
+                trainingList.innerHTML = '<li>Noch keine Trainingseinheiten protokolliert.</li>';
+                return;
+            }
+             // Sort training by date, most recent first
+            const sortedTraining = [...appData.training].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            sortedTraining.forEach(train => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <strong>${new Date(train.date).toLocaleDateString('de-DE')} - ${train.trickName}</strong> (${getDogNameById(train.dogId)})
+                    <p>Erfolg: ${'⭐'.repeat(train.successRating)}${'☆'.repeat(5 - train.successRating)}</p>
+                    <p>Notizen: ${train.notes || 'Keine'}</p>
+                     <div class="actions">
+                        <button onclick="editTraining('${train.id}')" class="action-button" style="background-color:var(--accent-color); margin-right:5px;">Bearbeiten</button>
+                        <button onclick="deleteTraining('${train.id}')" class="delete-button">Löschen</button>
+                    </div>
+                `;
+                trainingList.appendChild(li);
+            });
+        }
+        
+        window.editTraining = function(id) {
+            const trainingItem = appData.training.find(t => t.id === id);
+            if (trainingItem) {
+                trainingIdInput.value = trainingItem.id;
+                trainingDogIdSelect.value = trainingItem.dogId;
+                trainingDateInput.value = trainingItem.date;
+                trainingTrickNameInput.value = trainingItem.trickName;
+                trainingSuccessRatingInput.value = trainingItem.successRating;
+                trainingNotesInput.value = trainingItem.notes || '';
+                
+                activateTab('training');
+                mainNav.querySelector('button[data-tab="training"]').classList.add('active');
+                addTrainingForm.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        window.deleteTraining = function(id) {
+            if (confirm('Diese Trainingseinheit wirklich löschen?')) {
+                appData.training = appData.training.filter(t => t.id !== id);
+                saveData();
+                renderTrainingList();
+            }
+        }
+
+        // --- Statistiken ---
+        generateStatsButton.addEventListener('click', renderStatistics);
+
+        function renderStatistics() {
+            const selectedDogId = statsDogSelect.value;
+            statsOutput.innerHTML = ''; // Clear previous stats
+            walkCalendar.innerHTML = ''; // Clear calendar
+
+            let filteredWalks = appData.walks;
+            let filteredTraining = appData.training;
+
+            if (selectedDogId !== 'all') {
+                filteredWalks = appData.walks.filter(w => w.dogId === selectedDogId);
+                filteredTraining = appData.training.filter(t => t.dogId === selectedDogId);
+            }
+            
+            if (appData.dogs.length === 0) {
+                 statsOutput.innerHTML = '<p>Keine Hunde vorhanden, um Statistiken zu erstellen.</p>';
+                 return;
+            }
+
+            // Gesamtanzahl Gassi-Gänge
+            const totalWalks = filteredWalks.length;
+            addStatCard('Gesamt Gassi-Gänge', totalWalks);
+
+            // Gesamtdauer Gassi
+            const totalDuration = filteredWalks.reduce((sum, walk) => sum + (walk.durationMinutes || 0), 0);
+            addStatCard('Gesamtdauer Gassi', `${totalDuration} Min.`);
+
+            // Durchschnittliche Dauer
+            const avgDuration = totalWalks > 0 ? (totalDuration / totalWalks).toFixed(1) : 0;
+            addStatCard('Ø Dauer pro Gang', `${avgDuration} Min.`);
+            
+            // Kot & Urin
+            const totalPoops = filteredWalks.filter(w => w.poop).length;
+            const totalPees = filteredWalks.filter(w => w.pee).length;
+            addStatCard('Kot abgesetzt (Gänge)', totalPoops);
+            addStatCard('Urin abgesetzt (Gänge)', totalPees);
+
+            // Trainingseinheiten
+            const totalTrainingSessions = filteredTraining.length;
+            addStatCard('Trainingseinheiten', totalTrainingSessions);
+
+            // Durchschnittlicher Trainingserfolg
+            if (totalTrainingSessions > 0) {
+                const totalSuccessScore = filteredTraining.reduce((sum, t) => sum + t.successRating, 0);
+                const avgSuccess = (totalSuccessScore / totalTrainingSessions).toFixed(1);
+                addStatCard('Ø Trainingserfolg', `${avgSuccess} / 5`);
+            } else {
+                addStatCard('Ø Trainingserfolg', 'N/A');
+            }
+            
+            // Simple Calendar for walks
+            renderSimpleWalkCalendar(filteredWalks);
+        }
+        
+        function addStatCard(title, value) {
+            const card = document.createElement('div');
+            card.classList.add('stat-card');
+            card.innerHTML = `<h4>${title}</h4><p>${value}</p>`;
+            statsOutput.appendChild(card);
+        }
+        
+        function renderSimpleWalkCalendar(walksToDisplay) {
+            walkCalendar.innerHTML = ''; // Clear previous calendar
+            if (walksToDisplay.length === 0) {
+                walkCalendar.innerHTML = '<p>Keine Gassi-Gänge für Kalenderansicht vorhanden.</p>';
+                return;
+            }
+
+            // Create a map of dates to walk counts
+            const walkCountsByDate = {};
+            walksToDisplay.forEach(walk => {
+                const dateStr = walk.date; // YYYY-MM-DD
+                walkCountsByDate[dateStr] = (walkCountsByDate[dateStr] || 0) + 1;
+            });
+
+            // Determine date range (last 30 days for simplicity, or a range based on data)
+            const dates = Object.keys(walkCountsByDate).sort();
+            if (dates.length === 0) return;
+
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            // Create day cells for the last 30 days
+            for (let i = 0; i < 30; i++) {
+                const day = new Date();
+                day.setDate(today.getDate() - (29 - i)); // Iterate from 29 days ago to today
+                const dateString = day.toISOString().split('T')[0];
+                
+                const dayCell = document.createElement('div');
+                dayCell.style.width = '60px';
+                dayCell.style.height = '60px';
+                dayCell.style.border = '1px solid #ccc';
+                dayCell.style.textAlign = 'center';
+                dayCell.style.padding = '5px';
+                dayCell.style.fontSize = '0.8em';
+                dayCell.textContent = day.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+                if (walkCountsByDate[dateString]) {
+                    dayCell.style.backgroundColor = 'var(--primary-color)';
+                    dayCell.style.color = 'white';
+                    dayCell.title = `${walkCountsByDate[dateString]} Gassi-Gang(e) am ${day.toLocaleDateString('de-DE')}`;
+                    const countSpan = document.createElement('span');
+                    countSpan.style.display = 'block';
+                    countSpan.style.fontSize = '1.2em';
+                    countSpan.style.fontWeight = 'bold';
+                    countSpan.textContent = walkCountsByDate[dateString];
+                    dayCell.appendChild(countSpan);
+                } else {
+                     dayCell.style.backgroundColor = '#efefef';
+                }
+                walkCalendar.appendChild(dayCell);
+            }
+        }
+
+
+        // --- Daten Import/Export ---
+        function objectToCsv(dataArray, headers) {
+            if (!dataArray || dataArray.length === 0) return '';
+            const csvRows = [];
+            csvRows.push(headers.join(',')); // Header row
+
+            for (const row of dataArray) {
+                const values = headers.map(header => {
+                    let val = row[header] === undefined || row[header] === null ? '' : row[header];
+                    if (typeof val === 'string' && (val.includes(',') || val.includes('\n') || val.includes('"'))) {
+                        val = `"${val.replace(/"/g, '""')}"`; // Escape quotes and wrap in quotes
+                    } else if (Array.isArray(val)) {
+                        val = `"${val.join(';')}"`; // Join arrays with semicolon, quote the string
+                    }
+                    return val;
+                });
+                csvRows.push(values.join(','));
+            }
+            return csvRows.join('\n');
+        }
+
+        function downloadCsv(csvString, filename) {
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) { // Feature detection
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        exportDataButton.addEventListener('click', () => {
+            exportSpinner.classList.remove('hidden');
+            try {
+                // Define headers carefully. Ensure they match object keys or handle mapping.
+                const dogHeaders = ['id', 'name', 'breed', 'birthDate', 'color', 'weight', 'chipNr', 'allergies', 'photo'];
+                const walkHeaders = ['id', 'dogId', 'date', 'startTime', 'endTime', 'durationMinutes', 'routeNotes', 'poop', 'pee', 'socialContacts', 'trainingExercises', 'specialEvents'];
+                const trainingHeaders = ['id', 'dogId', 'date', 'trickName', 'successRating', 'notes'];
+
+                const dogsCsv = objectToCsv(appData.dogs, dogHeaders);
+                const walksCsv = objectToCsv(appData.walks, walkHeaders);
+                const trainingCsv = objectToCsv(appData.training, trainingHeaders);
+
+                // For simplicity, download one by one or create a ZIP (more complex)
+                // Here we download them sequentially.
+                if (appData.dogs.length > 0) downloadCsv(dogsCsv, 'hunde_export.csv');
+                if (appData.walks.length > 0) downloadCsv(walksCsv, 'gassi_export.csv');
+                if (appData.training.length > 0) downloadCsv(trainingCsv, 'training_export.csv');
+                
+                alert('Datenexport gestartet. Überprüfe deine Downloads.');
+            } catch (error) {
+                console.error("Export Fehler:", error);
+                alert("Fehler beim Exportieren der Daten.");
+            } finally {
+                exportSpinner.classList.add('hidden');
+            }
+        });
+        
+        function parseCsv(csvText) {
+            const lines = csvText.split(/\r\n|\n/);
+            if (lines.length < 2) return []; // Need header + at least one data row
+
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue; // Skip empty lines
+
+                const values = [];
+                let currentVal = '';
+                let inQuotes = false;
+                for (let char of lines[i]) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(currentVal.trim());
+                        currentVal = '';
+                    } else {
+                        currentVal += char;
+                    }
+                }
+                values.push(currentVal.trim()); // Add last value
+
+                const entry = {};
+                headers.forEach((header, index) => {
+                    let value = values[index] || '';
+                    // Basic type conversion (can be more sophisticated)
+                    if (value.toLowerCase() === 'true') value = true;
+                    else if (value.toLowerCase() === 'false') value = false;
+                    else if (!isNaN(value) && value !== '') { // Check for numbers
+                        if (header === 'weight' || header === 'durationMinutes' || header === 'successRating') {
+                           value = parseFloat(value); // Keep as number if it's a numeric field
+                        }
+                    }
+                    
+                    // Handle array fields (like allergies)
+                    if (header === 'allergies' && typeof value === 'string' && value.startsWith('"') && value.endsWith('"')) {
+                        value = value.slice(1, -1).split(';').map(s => s.trim()).filter(s => s);
+                    } else if (header === 'allergies' && typeof value === 'string' && !value) {
+                         value = []; // empty array if string is empty
+                    }
+                    entry[header] = value;
+                });
+                data.push(entry);
+            }
+            return data;
+        }
+
+
+        importDataButton.addEventListener('click', async () => {
+            importSpinner.classList.remove('hidden');
+            importStatus.textContent = 'Importiere Daten...';
+            let importedSomething = false;
+
+            try {
+                const processFile = async (fileInput, dataKey) => {
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const text = await file.text();
+                        const parsedData = parseCsv(text);
+                        if (parsedData.length > 0) {
+                            // Simple merge: add new, update existing based on ID. Or just replace.
+                            // For simplicity: overwrite existing data for that key.
+                            appData[dataKey] = parsedData;
+                            importedSomething = true;
+                            console.log(`Imported ${parsedData.length} items into ${dataKey}`);
+                        }
+                        fileInput.value = ''; // Clear file input
+                    }
+                };
+
+                await processFile(csvFileDogsInput, 'dogs');
+                await processFile(csvFileWalksInput, 'walks');
+                await processFile(csvFileTrainingInput, 'training');
+
+                if (importedSomething) {
+                    saveData();
+                    // Re-render everything
+                    renderDogList();
+                    populateDogSelects();
+                    renderWalkList();
+                    renderTrainingList();
+                    renderStatistics(); // Or just inform user to regenerate
+                    importStatus.textContent = 'Daten erfolgreich importiert! Die Ansichten wurden aktualisiert.';
+                    alert('Daten erfolgreich importiert!');
+                } else {
+                    importStatus.textContent = 'Keine Dateien zum Importieren ausgewählt oder Dateien waren leer.';
+                }
+
+            } catch (error) {
+                console.error("Import Fehler:", error);
+                importStatus.textContent = `Fehler beim Import: ${error.message}`;
+                alert('Fehler beim Importieren der Daten. Überprüfe das Format der CSV-Dateien.');
+            } finally {
+                importSpinner.classList.add('hidden');
+            }
+        });
+
+
+        // --- App Initialisierung ---
+        function initApp() {
+            loadData();
+            renderDogList();
+            populateDogSelects();
+            renderWalkList();
+            renderTrainingList();
+            activateTab('dogs'); // Start on dog profiles
+            // Set default dates for forms
+            const today = new Date().toISOString().split('T')[0];
+            walkDateInput.value = today;
+            trainingDateInput.value = today;
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
