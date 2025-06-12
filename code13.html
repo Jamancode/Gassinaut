@@ -1,0 +1,2492 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2E7D32">
+    <title>🐕 Gassinaut Pro - Premium Gassi-Tracker</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* === MOBILE-FIRST DESIGN SYSTEM === */
+        :root {
+            /* Colors inspired by nature and dogs */
+            --primary: #2E7D32;
+            --primary-dark: #1B5E20;
+            --primary-light: #66BB6A;
+            --secondary: #FF6B35;
+            --secondary-dark: #E55100;
+            --secondary-light: #FF8A50;
+            --accent: #FFB700;
+            --accent-light: #FFD54F;
+
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --info: #2196F3;
+
+            --background: #FAFAFA;
+            --surface: #FFFFFF;
+            --surface-elevated: #FFFFFF;
+            --on-surface: #212121;
+            --on-surface-variant: #757575;
+
+            /* Shadows for depth */
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-md: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            --shadow-lg: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+            --shadow-xl: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+
+            /* Border radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-round: 9999px;
+
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* Animation curves */
+            --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+            --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+
+            /* Z-index layers */
+            --z-base: 0;
+            --z-dropdown: 100;
+            --z-sticky: 200;
+            --z-fixed: 300;
+            --z-modal-backdrop: 400;
+            --z-modal: 500;
+            --z-popover: 600;
+            --z-tooltip: 700;
+            --z-notification: 800;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideInDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes dogWag {
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+        }
+
+        @keyframes pawPrint {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            100% { transform: scale(1.5) rotate(180deg); opacity: 0; }
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* === BASE STYLES === */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--on-surface);
+            background: var(--background);
+            position: relative;
+            overscroll-behavior: none;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* === SPLASH SCREEN === */
+        .splash-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: var(--z-notification);
+            transition: all var(--transition-slow);
+        }
+
+        .splash-screen.hide {
+            opacity: 0;
+            transform: scale(1.2);
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            font-size: 100px;
+            animation: dogWag 1s ease-in-out infinite;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+        }
+
+        .splash-title {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .splash-subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+
+        /* === PROFILE SELECTOR === */
+        .profile-selector {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            z-index: var(--z-modal);
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition-medium);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .profile-selector.hidden {
+            transform: translateY(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .profile-header {
+            padding: env(safe-area-inset-top) 20px 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .profile-header h1 {
+            color: white;
+            font-size: 1.8rem;
+            margin: 0 0 10px;
+            font-weight: 600;
+        }
+
+        .profile-header p {
+            color: rgba(255,255,255,0.9);
+            margin: 0;
+        }
+
+        .profile-list {
+            flex: 1;
+            padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            animation: slideInUp var(--transition-medium) var(--ease-out-back);
+            animation-fill-mode: both;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(46, 125, 50, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width var(--transition-medium), height var(--transition-medium);
+        }
+
+        .profile-card:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .profile-card:nth-child(1) { animation-delay: 0ms; }
+        .profile-card:nth-child(2) { animation-delay: 50ms; }
+        .profile-card:nth-child(3) { animation-delay: 100ms; }
+        .profile-card:nth-child(4) { animation-delay: 150ms; }
+
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-round);
+            background: var(--primary-light);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--on-surface);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-details {
+            color: var(--on-surface-variant);
+            font-size: 0.9rem;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-add-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px dashed rgba(255,255,255,0.5);
+            color: white;
+            font-weight: 600;
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            animation: slideInUp var(--transition-medium) var(--ease-out-back);
+            animation-delay: 200ms;
+            animation-fill-mode: both;
+        }
+
+        .profile-add-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: white;
+            transform: translateY(-2px);
+        }
+
+        .profile-add-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* === MAIN APP HEADER === */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: env(safe-area-inset-top) 0 0;
+            position: sticky;
+            top: 0;
+            z-index: var(--z-sticky);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-dog-emoji {
+            font-size: 1.5rem;
+            animation: dogWag 2s ease-in-out infinite;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-round);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 20px;
+        }
+
+        .header-btn:active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(0.9);
+        }
+
+        .profile-indicator {
+            background: rgba(255,255,255,0.2);
+            border-radius: var(--radius-xl);
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .profile-indicator:active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(0.98);
+        }
+
+        .profile-indicator-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .profile-indicator-emoji {
+            font-size: 1.2rem;
+        }
+
+        /* === MAIN CONTENT === */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: var(--background);
+            position: relative;
+        }
+
+        .page {
+            min-height: 100%;
+            padding: 16px;
+            padding-bottom: calc(80px + env(safe-area-inset-bottom));
+            animation: fadeIn var(--transition-medium);
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* === BOTTOM NAVIGATION === */
+        .bottom-nav {
+            background: var(--surface);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 env(safe-area-inset-bottom);
+            z-index: var(--z-fixed);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            color: var(--on-surface-variant);
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item.active .nav-icon {
+            transform: translateY(-2px);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 0 0 2px 2px;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            transition: transform var(--transition-fast);
+        }
+
+        .nav-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* === CARDS === */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all var(--transition-fast);
+            animation: slideInUp var(--transition-medium) var(--ease-out-back);
+        }
+
+        .card:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--on-surface);
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: var(--on-surface-variant);
+            margin: 4px 0 0;
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        .card-footer {
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.02);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* === DASHBOARD === */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+            animation: scaleIn var(--transition-medium) var(--ease-out-back);
+            animation-fill-mode: both;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0ms; }
+        .stat-card:nth-child(2) { animation-delay: 100ms; }
+        .stat-card:nth-child(3) { animation-delay: 200ms; }
+
+        .stat-card::after {
+            content: '🐾';
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            font-size: 60px;
+            opacity: 0.1;
+            transform: rotate(-15deg);
+        }
+
+        .stat-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--on-surface-variant);
+            margin: 0;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .quick-action {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-weight: 600;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quick-action::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            transform: rotate(45deg);
+            transition: all var(--transition-medium);
+        }
+
+        .quick-action:hover::before {
+            transform: rotate(45deg) translate(20px, 20px);
+        }
+
+        .quick-action:active {
+            transform: scale(0.95);
+        }
+
+        .quick-action-icon {
+            font-size: 40px;
+            animation: bounceIn var(--transition-slow) var(--ease-out-back);
+        }
+
+        /* === CALENDAR === */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .calendar-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--on-surface);
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .calendar-nav-btn {
+            background: var(--surface);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: var(--radius-md);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--on-surface);
+        }
+
+        .calendar-nav-btn:active {
+            background: var(--primary);
+            color: white;
+            transform: scale(0.9);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            background: rgba(0,0,0,0.05);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            padding: 2px;
+        }
+
+        .calendar-day-header {
+            background: var(--surface);
+            padding: 8px 0;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--on-surface-variant);
+        }
+
+        .calendar-day {
+            background: var(--surface);
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .calendar-day:active {
+            background: var(--primary-light);
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .calendar-day.today {
+            background: var(--accent-light);
+            font-weight: 700;
+        }
+        
+        .calendar-day.today.selected {
+            background: var(--primary);
+            color: white;
+        }
+
+        .calendar-day.has-walks::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .calendar-day.selected {
+            background: var(--primary-light);
+            color: white;
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
+        .calendar-day-number {
+            font-size: 0.9rem;
+        }
+
+        .calendar-day-walks {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--accent);
+            color: var(--on-surface);
+            font-size: 0.7rem;
+            padding: 1px 4px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+        }
+
+        /* === MAP CONTAINERS === */
+        .map-container {
+            height: 200px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            position: relative;
+            background: #E0E0E0;
+            margin-bottom: 16px;
+        }
+
+        .map-container.large {
+            height: 300px;
+        }
+
+        .map-container.fullscreen {
+            position: fixed;
+            inset: 0;
+            height: 100vh;
+            width: 100vw;
+            z-index: var(--z-modal);
+            border-radius: 0;
+            margin: 0;
+        }
+
+        .map-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.9);
+            z-index: 10;
+        }
+
+        .map-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* === FORMS === */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--on-surface);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all var(--transition-fast);
+            background: var(--surface);
+            color: var(--on-surface);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23333' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+
+        .form-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .form-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .form-checkbox-label {
+            flex: 1;
+            color: var(--on-surface);
+        }
+
+        .form-range {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(0,0,0,0.1);
+            outline: none;
+            margin: 16px 0;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .form-range::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+            box-shadow: var(--shadow-md);
+        }
+
+        .form-range-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--on-surface-variant);
+        }
+
+        /* === BUTTONS === */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width var(--transition-medium), height var(--transition-medium);
+        }
+
+        .btn:active::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: var(--primary-dark);
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:active {
+            background: var(--primary);
+            color: white;
+            transform: scale(0.98);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:active {
+            background: #D32F2F;
+            transform: scale(0.98);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: var(--radius-round);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            color: var(--on-surface);
+        }
+
+        .btn-icon:active {
+            background: rgba(0,0,0,0.1);
+            transform: scale(0.9);
+        }
+
+        /* === FAB === */
+        .fab {
+            position: fixed;
+            bottom: calc(90px + env(safe-area-inset-bottom));
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-round);
+            background: var(--secondary);
+            color: white;
+            border: none;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all var(--transition-fast);
+            z-index: var(--z-fixed);
+            animation: scaleIn var(--transition-medium) var(--ease-out-back);
+        }
+
+        .fab:active {
+            transform: scale(0.9);
+            box-shadow: var(--shadow-md);
+        }
+
+        .fab.hidden {
+            transform: scale(0);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* === MODALS === */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: var(--z-modal);
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-fast);
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9);
+            transition: transform var(--transition-medium) var(--ease-out-back);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--on-surface);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-round);
+            color: var(--on-surface-variant);
+            transition: all var(--transition-fast);
+        }
+
+        .modal-close:active {
+            background: rgba(0,0,0,0.1);
+            transform: scale(0.9);
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        /* === TOASTS === */
+        .toast-container {
+            position: fixed;
+            bottom: calc(100px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: var(--z-notification);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--on-surface);
+            color: white;
+            padding: 12px 20px;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            animation: slideInUp var(--transition-medium) var(--ease-out-back);
+            pointer-events: auto;
+        }
+
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--error); }
+        .toast.warning { background: var(--warning); }
+        .toast.info { background: var(--info); }
+
+        .toast.hide {
+            animation: slideInDown var(--transition-fast) reverse forwards;
+        }
+
+        /* === LISTS === */
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .list-item {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-fast);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .list-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.05);
+            transform: translate(-50%, -50%);
+            transition: width var(--transition-medium), height var(--transition-medium);
+        }
+
+        .list-item:active::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        .list-item-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            background: var(--primary-light);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .list-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .list-item-title {
+            font-weight: 600;
+            color: var(--on-surface);
+            margin: 0 0 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-item-subtitle {
+            font-size: 0.9rem;
+            color: var(--on-surface-variant);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* === GASSI WALK UI === */
+        .gassi-map {
+            height: 50vh;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 16px;
+            position: relative;
+            background: #E0E0E0;
+        }
+
+        .gassi-controls {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .gassi-control-btn {
+            background: var(--surface);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-round);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 20px;
+        }
+
+        .gassi-control-btn:active {
+            transform: scale(0.9);
+            background: var(--primary);
+            color: white;
+        }
+
+        .gassi-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .gassi-stat {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .gassi-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .gassi-stat-label {
+            font-size: 0.8rem;
+            color: var(--on-surface-variant);
+            margin: 4px 0 0;
+        }
+
+        .gassi-events {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .gassi-event-btn {
+            background: var(--surface);
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-weight: 600;
+            color: var(--on-surface);
+        }
+
+        .gassi-event-btn:active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .gassi-event-icon {
+            font-size: 32px;
+        }
+
+        /* === EMPTY STATES === */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--on-surface-variant);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            opacity: 0.5;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0 0 8px;
+            color: var(--on-surface);
+        }
+
+        .empty-state-text {
+            margin: 0;
+        }
+
+        /* === UTILITIES === */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: var(--on-surface-variant);
+        }
+
+        .mt-1 { margin-top: 8px; }
+        .mt-2 { margin-top: 16px; }
+        .mt-3 { margin-top: 24px; }
+        .mb-1 { margin-bottom: 8px; }
+        .mb-2 { margin-bottom: 16px; }
+        .mb-3 { margin-bottom: 24px; }
+
+        /* === RESPONSIVE === */
+        @media (min-width: 768px) {
+            body {
+                background: #E0E0E0;
+            }
+            .app-container {
+                max-width: 450px;
+                height: 90vh;
+                margin: 5vh auto;
+                box-shadow: var(--shadow-xl);
+                border-radius: var(--radius-xl);
+            }
+
+            .bottom-nav {
+                max-width: 450px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+            }
+
+            .fab {
+                right: calc(50vw - 225px + 16px);
+            }
+
+            .profile-list {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+
+            .stat-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .quick-actions {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .gassi-events {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* === LEAFLET OVERRIDES === */
+        .leaflet-container {
+            font-family: inherit;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .leaflet-popup-content {
+            margin: 16px;
+            font-size: 0.9rem;
+        }
+        
+        .custom-marker {
+            font-size: 24px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* === DOG MARKER === */
+        .dog-marker {
+            background: var(--primary);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+            border: 3px solid white;
+        }
+        .dog-marker-inner {
+            transform: rotate(45deg);
+            font-size: 20px;
+        }
+
+        /* === PWA STYLES === */
+        @media (display-mode: standalone) {
+            .app-header {
+                padding-top: env(safe-area-inset-top);
+            }
+        }
+
+        /* === LOADING ANIMATION === */
+        .loading {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .loading span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: bounce 1.4s ease-in-out infinite both;
+        }
+
+        .loading span:nth-child(1) { animation-delay: -0.32s; }
+        .loading span:nth-child(2) { animation-delay: -0.16s; }
+        .loading span:nth-child(3) { animation-delay: 0; }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-logo">🐕</div>
+        <h1 class="splash-title">Gassinaut Pro</h1>
+        <p class="splash-subtitle">Premium Gassi-Tracker</p>
+        <div class="loading mt-3" style="color: white;">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <!-- Profile Selector -->
+    <div id="profileSelector" class="profile-selector hidden">
+        <div class="profile-header">
+            <h1>Wähle dein Hundeprofil</h1>
+            <p>Oder erstelle ein neues Profil für deinen Liebling</p>
+        </div>
+        <div id="profileList" class="profile-list"></div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="header-title">
+                    <span class="header-dog-emoji">🐕</span>
+                    <span>Gassinaut</span>
+                </h1>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="app.showProfileModal(app.currentDogId)">⚙️</button>
+                    <div class="profile-indicator" onclick="app.showProfileSelector()">
+                        <span id="currentDogName" class="profile-indicator-name">Loading...</span>
+                        <span id="currentDogEmoji" class="profile-indicator-emoji">🐕</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="page active">
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🚶</div>
+                        <h2 class="stat-value" id="statWalksToday">0</h2>
+                        <p class="stat-label">Runden heute</p>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📏</div>
+                        <h2 class="stat-value" id="statDistanceToday">0 km</h2>
+                        <p class="stat-label">Distanz heute</p>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <h2 class="stat-value" id="statTimeToday">0 min</h2>
+                        <p class="stat-label">Zeit heute</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📍 Letzte Gassi-Runde</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="lastWalkMap" class="map-container">
+                            <div class="map-loading">
+                                <div class="map-loading-spinner"></div>
+                            </div>
+                        </div>
+                        <div id="lastWalkInfo" class="text-center text-muted">
+                            <p>Noch keine Runde aufgezeichnet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="quick-action" onclick="app.quickStart()">
+                        <span class="quick-action-icon">⚡</span>
+                        <span>Quick Start</span>
+                    </button>
+                    <button class="quick-action" onclick="app.showToast('Feature kommt bald!', 'info')">
+                        <span class="quick-action-icon">🎯</span>
+                        <span>Gassi planen</span>
+                    </button>
+                    <button class="quick-action" onclick="app.navigateTo('calendar')">
+                        <span class="quick-action-icon">📅</span>
+                        <span>Kalender</span>
+                    </button>
+                    <button class="quick-action" onclick="app.navigateTo('statistics')">
+                        <span class="quick-action-icon">📊</span>
+                        <span>Statistiken</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar Page -->
+            <div id="page-calendar" class="page">
+                <div class="calendar-header">
+                    <h2 class="calendar-title" id="calendarTitle">Januar 2024</h2>
+                    <div class="calendar-nav">
+                        <button class="calendar-nav-btn" onclick="app.calendar.previousMonth()">◀</button>
+                        <button class="calendar-nav-btn" onclick="app.calendar.today()">Heute</button>
+                        <button class="calendar-nav-btn" onclick="app.calendar.nextMonth()">▶</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding: 0;">
+                        <div class="calendar-grid" id="calendarGrid"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Walks am <span id="selectedDateDisplay">...</span></h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="walksForDayList" class="list">
+                            <div class="empty-state">
+                                <p>Wähle einen Tag aus, um Details zu sehen.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Routes Page -->
+            <div id="page-routes" class="page">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🗺️</div>
+                    <h3 class="empty-state-title">Routen kommen bald</h3>
+                    <p class="empty-state-text">Hier wirst du bald deine Lieblingsrouten speichern und wiederfinden können.</p>
+                </div>
+            </div>
+
+            <!-- Management Page -->
+            <div id="page-management" class="page">
+                 <div class="empty-state">
+                    <div class="empty-state-icon">🦴</div>
+                    <h3 class="empty-state-title">Verwaltung kommt bald</h3>
+                    <p class="empty-state-text">Verwalte hier bald Freunde, Ausrüstung und Trainingseinheiten.</p>
+                </div>
+            </div>
+
+            <!-- Statistics Page -->
+            <div id="page-statistics" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Aktivitätsübersicht (30 Tage)</h3>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🏆 Bestleistungen</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="recordsList" class="list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gassi Walk Page -->
+            <div id="page-gassi" class="page">
+                <div id="gassiMap" class="gassi-map">
+                    <div class="gassi-controls">
+                        <button class="gassi-control-btn" onclick="app.gassi.centerMap()">📍</button>
+                    </div>
+                    <div class="map-loading">
+                        <div class="map-loading-spinner"></div>
+                    </div>
+                </div>
+
+                <div class="gassi-stats">
+                    <div class="gassi-stat">
+                        <h3 class="gassi-stat-value" id="gassiTime">00:00:00</h3>
+                        <p class="gassi-stat-label">Zeit</p>
+                    </div>
+                    <div class="gassi-stat">
+                        <h3 class="gassi-stat-value" id="gassiDistance">0.00 km</h3>
+                        <p class="gassi-stat-label">Distanz</p>
+                    </div>
+                    <div class="gassi-stat">
+                        <h3 class="gassi-stat-value" id="gassiSpeed">0.0 km/h</h3>
+                        <p class="gassi-stat-label">Tempo</p>
+                    </div>
+                </div>
+
+                <div class="gassi-events">
+                    <button class="gassi-event-btn" onclick="app.gassi.logEvent('poop')">
+                        <span class="gassi-event-icon">💩</span>
+                        <span>Geschäft</span>
+                    </button>
+                    <button class="gassi-event-btn" onclick="app.gassi.logEvent('pee')">
+                        <span class="gassi-event-icon">💧</span>
+                        <span>Pipi</span>
+                    </button>
+                    <button class="gassi-event-btn" onclick="app.gassi.logEvent('encounter')">
+                        <span class="gassi-event-icon">🐾</span>
+                        <span>Begegnung</span>
+                    </button>
+                    <button class="gassi-event-btn" onclick="app.gassi.logEvent('marker')">
+                        <span class="gassi-event-icon">📍</span>
+                        <span>Marker</span>
+                    </button>
+                </div>
+
+                <button id="pauseBtn" class="btn btn-secondary btn-block mb-2 mt-3" onclick="app.gassi.togglePause()">
+                    ⏸️ Pause
+                </button>
+                <button class="btn btn-danger btn-block" onclick="app.gassi.confirmStop()">
+                    ⏹️ Beenden & Speichern
+                </button>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <a href="#" class="nav-item active" data-page="dashboard" onclick="app.navigateTo('dashboard')">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Start</span>
+            </a>
+            <a href="#" class="nav-item" data-page="calendar" onclick="app.navigateTo('calendar')">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Kalender</span>
+            </a>
+            <a href="#" class="nav-item" data-page="routes" onclick="app.navigateTo('routes')">
+                <span class="nav-icon">🗺️</span>
+                <span class="nav-label">Routen</span>
+            </a>
+            <a href="#" class="nav-item" data-page="management" onclick="app.navigateTo('management')">
+                <span class="nav-icon">🦴</span>
+                <span class="nav-label">Verwaltung</span>
+            </a>
+            <a href="#" class="nav-item" data-page="statistics" onclick="app.navigateTo('statistics')">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Statistik</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Modal</h2>
+                <button class="modal-close" onclick="app.closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+
+    <script>
+    // Gassinaut Pro - Complete Mobile-First Dog Walking App
+    const app = {
+        // State Management
+        data: null,
+        currentDogId: null,
+        currentPage: 'dashboard',
+        maps: {},
+        charts: {},
+
+        // Initialize App
+        init() {
+            this.loadData();
+
+            setTimeout(() => {
+                document.getElementById('splashScreen').classList.add('hide');
+                setTimeout(() => {
+                    document.getElementById('splashScreen').style.display = 'none';
+                    if (this.data.dogs.length === 0) {
+                        this.showProfileSelector();
+                    } else {
+                        const lastId = this.data.lastActiveDogId || this.data.dogs[0].id;
+                        this.selectProfile(lastId, true);
+                    }
+                }, 500);
+            }, 1500);
+
+            this.calendar.init();
+        },
+
+        // Data Management
+        loadData() {
+            const stored = localStorage.getItem('gassinaut_pro_v3');
+            if (stored) {
+                try {
+                    this.data = JSON.parse(stored);
+                } catch (e) {
+                    console.error('Error loading data:', e);
+                    this.initializeData();
+                }
+            } else {
+                this.initializeData();
+            }
+        },
+
+        initializeData() {
+            this.data = {
+                version: 3,
+                dogs: [],
+                lastActiveDogId: null,
+                settings: { units: 'metric' }
+            };
+            this.saveData();
+        },
+
+        saveData() {
+            try {
+                localStorage.setItem('gassinaut_pro_v3', JSON.stringify(this.data));
+            } catch (e) {
+                console.error('Error saving data:', e);
+                this.showToast('Speicherfehler! Der Speicher könnte voll sein.', 'error');
+            }
+        },
+
+        // Profile Management
+        showProfileSelector() {
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('profileSelector').classList.remove('hidden');
+            this.renderProfiles();
+        },
+
+        hideProfileSelector() {
+            document.getElementById('profileSelector').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+        },
+
+        renderProfiles() {
+            const container = document.getElementById('profileList');
+            container.innerHTML = '';
+
+            this.data.dogs.forEach((dog, index) => {
+                const card = document.createElement('div');
+                card.className = 'profile-card';
+                card.style.animationDelay = `${index * 50}ms`;
+                card.innerHTML = `
+                    <div class="profile-avatar">${dog.emoji || '🐕'}</div>
+                    <div class="profile-info">
+                        <h3 class="profile-name">${dog.name}</h3>
+                        <p class="profile-details">${dog.breed || 'Mischling'} • ${this.getAge(dog.birthDate)}</p>
+                    </div>
+                `;
+                card.onclick = () => this.selectProfile(dog.id);
+                container.appendChild(card);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'profile-add-btn';
+            addBtn.innerHTML = '➕ Neues Profil anlegen';
+            addBtn.onclick = () => this.showProfileModal();
+            container.appendChild(addBtn);
+        },
+
+        selectProfile(dogId, isInitialLoad = false) {
+            this.currentDogId = dogId;
+            this.data.lastActiveDogId = dogId;
+            this.saveData();
+            if (!isInitialLoad) {
+                this.showToast(`Profil von ${this.getCurrentDog().name} geladen!`, 'success');
+            }
+            this.startApp();
+        },
+
+        startApp() {
+            this.hideProfileSelector();
+            this.updateCurrentDogDisplay();
+            this.navigateTo('dashboard');
+        },
+
+        getCurrentDog() {
+            if (!this.currentDogId) return null;
+            return this.data.dogs.find(d => d.id === this.currentDogId);
+        },
+
+        updateCurrentDogDisplay() {
+            const dog = this.getCurrentDog();
+            if (dog) {
+                document.getElementById('currentDogName').textContent = dog.name;
+                document.getElementById('currentDogEmoji').textContent = dog.emoji || '🐕';
+            }
+        },
+
+        getAge(birthDate) {
+            if (!birthDate) return 'Unbekannt';
+            const years = new Date(new Date() - new Date(birthDate)).getFullYear() - 1970;
+            return `${years} ${years === 1 ? 'Jahr' : 'Jahre'}`;
+        },
+
+        showProfileModal(dogId = null) {
+            const dog = dogId ? this.data.dogs.find(d => d.id === dogId) : null;
+            const isEdit = !!dog;
+
+            const emojis = ['🐕', '🐩', '🦮', '🐕‍🦺', '🐶', '🐺', '🦊', '🐾'];
+            const selectedEmoji = dog?.emoji || emojis[0];
+
+            const body = `
+                <form id="profileForm">
+                    <input type="hidden" name="id" value="${dog?.id || ''}">
+                    <div class="form-group">
+                        <label class="form-label">Name *</label>
+                        <input type="text" class="form-input" name="name" required value="${dog?.name || ''}" placeholder="z.B. Bello">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rasse</label>
+                        <input type="text" class="form-input" name="breed" value="${dog?.breed || ''}" placeholder="z.B. Labrador">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Geburtsdatum</label>
+                        <input type="date" class="form-input" name="birthDate" value="${dog?.birthDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Emoji</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 8px;">
+                            ${emojis.map(emoji => `
+                                <label style="text-align: center; cursor: pointer;">
+                                    <input type="radio" name="emoji" value="${emoji}" ${selectedEmoji === emoji ? 'checked' : ''} class="hidden">
+                                    <div class="emoji-selector" style="font-size: 2rem; padding: 8px; border-radius: 8px; border: 2px solid ${selectedEmoji === emoji ? 'var(--primary)' : 'transparent'};">${emoji}</div>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ${isEdit ? `<button type="button" class="btn btn-danger btn-block mt-3" onclick="app.confirmDeleteProfile()">Profil löschen</button>` : ''}
+                </form>
+            `;
+            const footer = `
+                <button class="btn btn-secondary" onclick="app.closeModal()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="app.saveProfile()">Speichern</button>
+            `;
+            this.showModal(isEdit ? 'Profil bearbeiten' : 'Neues Profil', body, footer);
+            document.querySelectorAll('input[name="emoji"]').forEach(input => {
+                input.addEventListener('change', e => {
+                    document.querySelectorAll('.emoji-selector').forEach(div => div.style.borderColor = 'transparent');
+                    e.target.nextElementSibling.style.borderColor = 'var(--primary)';
+                });
+            });
+        },
+
+        saveProfile() {
+            const form = document.getElementById('profileForm');
+            const formData = new FormData(form);
+            const name = formData.get('name').trim();
+            if (!name) {
+                this.showToast('Bitte einen Namen eingeben!', 'error');
+                return;
+            }
+
+            const profileData = {
+                id: formData.get('id') || `dog_${Date.now()}`,
+                name: name,
+                breed: formData.get('breed').trim(),
+                birthDate: formData.get('birthDate'),
+                emoji: formData.get('emoji') || '🐕'
+            };
+
+            const existingIndex = this.data.dogs.findIndex(d => d.id === profileData.id);
+            if (existingIndex > -1) {
+                this.data.dogs[existingIndex] = { ...this.data.dogs[existingIndex], ...profileData };
+            } else {
+                profileData.data = { walks: [], events: [] };
+                this.data.dogs.push(profileData);
+                this.currentDogId = profileData.id;
+            }
+
+            this.saveData();
+            this.closeModal();
+            this.showToast(`Profil gespeichert! 🎉`, 'success');
+            
+            if (document.getElementById('app').classList.contains('hidden')) {
+                this.selectProfile(this.currentDogId);
+            } else {
+                this.updateCurrentDogDisplay();
+                this.refreshCurrentPage();
+            }
+        },
+
+        confirmDeleteProfile() {
+            this.showModal('Profil löschen?', 
+            '<p>Möchtest du dieses Hundeprofil wirklich löschen? Alle Daten gehen unwiderruflich verloren!</p>',
+            `<button class="btn btn-secondary" onclick="app.closeModal()">Abbrechen</button>
+             <button class="btn btn-danger" onclick="app.deleteProfile()">Löschen</button>`
+            );
+        },
+
+        deleteProfile() {
+            this.data.dogs = this.data.dogs.filter(d => d.id !== this.currentDogId);
+            this.currentDogId = this.data.dogs.length > 0 ? this.data.dogs[0].id : null;
+            this.data.lastActiveDogId = this.currentDogId;
+            this.saveData();
+            this.closeModal();
+            if (this.currentDogId) {
+                this.selectProfile(this.currentDogId);
+            } else {
+                this.showProfileSelector();
+            }
+            this.showToast('Profil gelöscht', 'info');
+        },
+
+        // Navigation
+        navigateTo(page) {
+            if (this.gassi.isActive) {
+                this.showToast('Bitte beende zuerst die aktuelle Gassi-Runde.', 'warning');
+                return;
+            }
+            if (!this.getCurrentDog()) {
+                this.showProfileSelector();
+                return;
+            }
+
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${page}`).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === page);
+            });
+            this.currentPage = page;
+            this.loadPage(page);
+            document.querySelector('.main-content').scrollTop = 0;
+        },
+
+        loadPage(page) {
+            switch(page) {
+                case 'dashboard': this.loadDashboard(); break;
+                case 'calendar': this.calendar.render(); break;
+                case 'statistics': this.loadStatistics(); break;
+            }
+        },
+
+        refreshCurrentPage() { this.loadPage(this.currentPage); },
+
+        // Dashboard
+        loadDashboard() {
+            const dog = this.getCurrentDog();
+            if (!dog) return;
+
+            const today = new Date().toDateString();
+            const todayWalks = dog.data.walks.filter(w => new Date(w.startTime).toDateString() === today);
+            const totalDistance = todayWalks.reduce((sum, w) => sum + (w.distance || 0), 0);
+            const totalTime = todayWalks.reduce((sum, w) => sum + (w.duration || 0), 0);
+
+            document.getElementById('statWalksToday').textContent = todayWalks.length;
+            document.getElementById('statDistanceToday').textContent = `${totalDistance.toFixed(1)} km`;
+            document.getElementById('statTimeToday').textContent = `${Math.round(totalTime)} min`;
+
+            this.loadLastWalk();
+        },
+
+        loadLastWalk() {
+            const dog = this.getCurrentDog();
+            const mapContainer = document.getElementById('lastWalkMap');
+            const infoContainer = document.getElementById('lastWalkInfo');
+            const loading = mapContainer.querySelector('.map-loading');
+
+            const lastWalk = dog?.data.walks?.slice(-1)[0];
+
+            if (!lastWalk || !lastWalk.route || lastWalk.route.length < 2) {
+                infoContainer.innerHTML = `<p>Noch keine Runde aufgezeichnet.</p>`;
+                loading.style.display = 'none';
+                if (this.maps.lastWalk) this.maps.lastWalk.remove();
+                this.maps.lastWalk = null;
+                return;
+            }
+
+            infoContainer.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; font-size: 0.9rem;">
+                    <div><strong>${new Date(lastWalk.startTime).toLocaleDateString('de-DE')}</strong><br><span class="text-muted">${new Date(lastWalk.startTime).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})}</span></div>
+                    <div><strong>${lastWalk.distance.toFixed(2)} km</strong><br><span class="text-muted">Distanz</span></div>
+                    <div><strong>${Math.round(lastWalk.duration)} min</strong><br><span class="text-muted">Dauer</span></div>
+                </div>`;
+
+            if (!this.maps.lastWalk) {
+                this.maps.lastWalk = L.map('lastWalkMap', { zoomControl: false, attributionControl: false });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.maps.lastWalk);
+            }
+
+            this.maps.lastWalk.eachLayer(layer => {
+                if (layer instanceof L.Polyline || layer instanceof L.Marker) layer.remove();
+            });
+
+            const polyline = L.polyline(lastWalk.route, { color: 'var(--secondary)', weight: 5 }).addTo(this.maps.lastWalk);
+            L.marker(lastWalk.route[0], { icon: L.divIcon({ className: 'custom-marker', html: '🏁' }) }).addTo(this.maps.lastWalk);
+            L.marker(lastWalk.route.slice(-1)[0], { icon: L.divIcon({ className: 'custom-marker', html: '🏠' }) }).addTo(this.maps.lastWalk);
+            
+            this.maps.lastWalk.fitBounds(polyline.getBounds().pad(0.1));
+            loading.style.display = 'none';
+        },
+
+        // Calendar
+        calendar: {
+            currentDate: new Date(),
+            selectedDate: new Date(),
+            init() { this.currentDate = new Date(); this.selectedDate = new Date(); },
+            render() {
+                const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
+                const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0);
+                const firstDayIndex = (firstDay.getDay() + 6) % 7;
+                
+                document.getElementById('calendarTitle').textContent = `${this.currentDate.toLocaleString('de-DE', { month: 'long' })} ${year}`;
+                const grid = document.getElementById('calendarGrid');
+                grid.innerHTML = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+
+                const dog = app.getCurrentDog();
+                const walksByDate = {};
+                dog.data.walks.forEach(w => {
+                    const dateStr = new Date(w.startTime).toDateString();
+                    if (!walksByDate[dateStr]) walksByDate[dateStr] = 0;
+                    walksByDate[dateStr]++;
+                });
+
+                for (let i = 0; i < firstDayIndex; i++) grid.insertAdjacentHTML('beforeend', '<div class="calendar-day other-month"></div>');
+
+                for (let day = 1; day <= lastDay.getDate(); day++) {
+                    const d = new Date(year, month, day);
+                    const dateStr = d.toDateString();
+                    const classes = ['calendar-day'];
+                    if (dateStr === new Date().toDateString()) classes.push('today');
+                    if (dateStr === this.selectedDate.toDateString()) classes.push('selected');
+                    if (walksByDate[dateStr]) classes.push('has-walks');
+
+                    grid.insertAdjacentHTML('beforeend', `
+                        <div class="${classes.join(' ')}" onclick="app.calendar.selectDate(new Date(${year}, ${month}, ${day}))">
+                            <span class="calendar-day-number">${day}</span>
+                            ${walksByDate[dateStr] ? `<div class="calendar-day-walks">${walksByDate[dateStr]}</div>` : ''}
+                        </div>`);
+                }
+                this.showWalksForSelectedDate();
+            },
+            previousMonth() { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); },
+            nextMonth() { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); },
+            today() { this.currentDate = new Date(); this.selectedDate = new Date(); this.render(); },
+            selectDate(date) { this.selectedDate = date; this.render(); },
+            showWalksForSelectedDate() {
+                document.getElementById('selectedDateDisplay').textContent = this.selectedDate.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' });
+                const dog = app.getCurrentDog();
+                const walksOnDay = dog.data.walks.filter(w => new Date(w.startTime).toDateString() === this.selectedDate.toDateString());
+                const list = document.getElementById('walksForDayList');
+                if (walksOnDay.length === 0) {
+                    list.innerHTML = `<div class="empty-state"><p>Keine Runden an diesem Tag.</p></div>`;
+                    return;
+                }
+                list.innerHTML = walksOnDay.map(w => `
+                    <div class="list-item">
+                        <div class="list-item-icon">🚶</div>
+                        <div class="list-item-content">
+                            <h4 class="list-item-title">Runde um ${new Date(w.startTime).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})}</h4>
+                            <p class="list-item-subtitle">${w.distance.toFixed(2)} km • ${Math.round(w.duration)} min</p>
+                        </div>
+                    </div>`).join('');
+            }
+        },
+        
+        // Statistics
+        loadStatistics() {
+            const dog = this.getCurrentDog();
+            if (!dog) return;
+
+            // Activity Chart
+            const labels = [];
+            const data = [];
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }));
+                
+                const walksOnDay = dog.data.walks.filter(w => new Date(w.startTime).toDateString() === date.toDateString());
+                const totalDistance = walksOnDay.reduce((sum, w) => sum + w.distance, 0);
+                data.push(totalDistance);
+            }
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            if (this.charts.activity) this.charts.activity.destroy();
+            this.charts.activity = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Distanz (km)',
+                        data: data,
+                        backgroundColor: 'rgba(46, 125, 50, 0.7)',
+                        borderColor: 'rgba(46, 125, 50, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+            
+            // Records
+            const records = {
+                longestDist: { value: 0, walk: null },
+                longestTime: { value: 0, walk: null },
+                fastestPace: { value: 999, walk: null },
+            };
+            dog.data.walks.forEach(w => {
+                if (w.distance > records.longestDist.value) records.longestDist = { value: w.distance, walk: w };
+                if (w.duration > records.longestTime.value) records.longestTime = { value: w.duration, walk: w };
+                const pace = w.duration / w.distance; // min/km
+                if (w.distance > 0.1 && pace < records.fastestPace.value) records.fastestPace = { value: pace, walk: w };
+            });
+
+            const recordsList = document.getElementById('recordsList');
+            recordsList.innerHTML = `
+                ${records.longestDist.walk ? `
+                <div class="list-item">
+                    <div class="list-item-icon" style="background:var(--secondary)">📏</div>
+                    <div class="list-item-content">
+                        <h4 class="list-item-title">Längste Distanz</h4>
+                        <p class="list-item-subtitle">${records.longestDist.value.toFixed(2)} km am ${new Date(records.longestDist.walk.startTime).toLocaleDateString('de-DE')}</p>
+                    </div>
+                </div>` : ''}
+                ${records.longestTime.walk ? `
+                <div class="list-item">
+                    <div class="list-item-icon" style="background:var(--accent)">⏱️</div>
+                    <div class="list-item-content">
+                        <h4 class="list-item-title">Längste Dauer</h4>
+                        <p class="list-item-subtitle">${Math.round(records.longestTime.value)} min am ${new Date(records.longestTime.walk.startTime).toLocaleDateString('de-DE')}</p>
+                    </div>
+                </div>` : ''}
+                ${records.fastestPace.walk ? `
+                <div class="list-item">
+                    <div class="list-item-icon" style="background:var(--info)">⚡</div>
+                    <div class="list-item-content">
+                        <h4 class="list-item-title">Schnellstes Tempo</h4>
+                        <p class="list-item-subtitle">${records.fastestPace.value.toFixed(1)} min/km am ${new Date(records.fastestPace.walk.startTime).toLocaleDateString('de-DE')}</p>
+                    </div>
+                </div>` : ''}
+            `;
+            if (recordsList.innerHTML.trim() === '') {
+                recordsList.innerHTML = `<div class="empty-state"><p>Zeichne Runden auf, um Rekorde aufzustellen!</p></div>`;
+            }
+
+        },
+
+        // Gassi Tracking
+        quickStart() { this.navigateTo('gassi'); this.gassi.start(); },
+        gassi: {
+            isActive: false, isPaused: false,
+            startTime: null, timerInterval: null, watchId: null,
+            route: [], distance: 0, events: [], lastPosition: null,
+            start() {
+                if (!('geolocation' in navigator)) {
+                    app.showToast('Geolocation wird nicht unterstützt.', 'error');
+                    app.navigateTo('dashboard');
+                    return;
+                }
+                this.isActive = true;
+                this.isPaused = false;
+                this.startTime = new Date();
+                this.route = [];
+                this.distance = 0;
+                this.events = [];
+                this.lastPosition = null;
+
+                document.querySelector('#page-gassi .map-loading').style.display = 'flex';
+                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+
+                if (!app.maps.gassi) {
+                    app.maps.gassi = L.map('gassiMap', { zoomControl: false, attributionControl: false });
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(app.maps.gassi);
+                }
+
+                this.watchId = navigator.geolocation.watchPosition(
+                    pos => this.onPositionUpdate(pos),
+                    err => this.onPositionError(err),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            },
+            onPositionUpdate(position) {
+                if (this.isPaused) return;
+
+                const { latitude, longitude, speed } = position.coords;
+                const currentCoord = [latitude, longitude];
+
+                document.querySelector('#page-gassi .map-loading').style.display = 'none';
+
+                if (!this.lastPosition) { // First point
+                    this.lastPosition = position;
+                    app.maps.gassi.setView(currentCoord, 17);
+                    
+                    const dogIcon = L.divIcon({
+                        className: 'dog-marker',
+                        html: `<div class="dog-marker-inner">${app.getCurrentDog().emoji || '🐕'}</div>`,
+                        iconSize: [36, 36],
+                        iconAnchor: [18, 36]
+                    });
+                    this.dogMarker = L.marker(currentCoord, { icon: dogIcon }).addTo(app.maps.gassi);
+                    this.routeLine = L.polyline([], { color: 'var(--secondary)', weight: 5 }).addTo(app.maps.gassi);
+                } else {
+                    this.distance += this.haversineDistance(this.lastPosition.coords, position.coords);
+                }
+
+                this.lastPosition = position;
+                this.route.push(currentCoord);
+                
+                this.dogMarker.setLatLng(currentCoord);
+                this.routeLine.addLatLng(currentCoord);
+                
+                document.getElementById('gassiDistance').textContent = `${this.distance.toFixed(2)} km`;
+                document.getElementById('gassiSpeed').textContent = speed ? `${(speed * 3.6).toFixed(1)} km/h` : '0.0 km/h';
+            },
+            onPositionError(error) {
+                app.showToast(`GPS-Fehler: ${error.message}`, 'error');
+            },
+            updateTimer() {
+                const now = new Date();
+                const diff = Math.floor((now - this.startTime) / 1000);
+                const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+                const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                const s = String(diff % 60).padStart(2, '0');
+                document.getElementById('gassiTime').textContent = `${h}:${m}:${s}`;
+            },
+            togglePause() {
+                this.isPaused = !this.isPaused;
+                const btn = document.getElementById('pauseBtn');
+                if (this.isPaused) {
+                    clearInterval(this.timerInterval);
+                    btn.innerHTML = '▶️ Fortsetzen';
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-primary');
+                } else {
+                    this.startTime = new Date() - (this.lastElapsedTime || 0);
+                    this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+                    btn.innerHTML = '⏸️ Pause';
+                    btn.classList.add('btn-secondary');
+                    btn.classList.remove('btn-primary');
+                }
+            },
+            confirmStop() {
+                app.showModal('Gassi beenden?', '<p>Möchtest du die Runde beenden und speichern?</p>',
+                `<button class="btn btn-secondary" onclick="app.closeModal()">Weitergehen</button>
+                 <button class="btn btn-danger" onclick="app.gassi.stop()">Beenden & Speichern</button>`);
+            },
+            stop() {
+                this.isActive = false;
+                clearInterval(this.timerInterval);
+                navigator.geolocation.clearWatch(this.watchId);
+                
+                const duration = (new Date() - this.startTime) / 60000; // in minutes
+                const walkData = {
+                    startTime: this.startTime.toISOString(),
+                    duration: duration,
+                    distance: this.distance,
+                    route: this.route,
+                    events: this.events
+                };
+
+                const dog = app.getCurrentDog();
+                dog.data.walks.push(walkData);
+                app.saveData();
+
+                // Cleanup map
+                if (app.maps.gassi) {
+                   app.maps.gassi.eachLayer(layer => {
+                     if (layer instanceof L.Polyline || layer instanceof L.Marker) layer.remove();
+                   });
+                }
+                
+                app.closeModal();
+                app.showToast('Runde gespeichert!', 'success');
+                app.navigateTo('dashboard');
+            },
+            logEvent(type) {
+                if (!this.lastPosition) {
+                    app.showToast('Warte auf GPS-Signal...', 'info');
+                    return;
+                }
+                const coord = [this.lastPosition.coords.latitude, this.lastPosition.coords.longitude];
+                this.events.push({ type, time: new Date().toISOString(), coord });
+                
+                const icons = { poop: '💩', pee: '💧', encounter: '🐾', marker: '📍' };
+                L.marker(coord, { icon: L.divIcon({ className: 'custom-marker', html: icons[type] }) }).addTo(app.maps.gassi);
+                app.showToast(`${icons[type]} Ereignis hinzugefügt!`, 'success');
+            },
+            centerMap() {
+                if (this.lastPosition) {
+                    app.maps.gassi.setView([this.lastPosition.coords.latitude, this.lastPosition.coords.longitude], 17);
+                }
+            },
+            haversineDistance(coords1, coords2) {
+                const R = 6371; // Radius of the Earth in km
+                const dLat = (coords2.latitude - coords1.latitude) * Math.PI / 180;
+                const dLon = (coords2.longitude - coords1.longitude) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                          Math.cos(coords1.latitude * Math.PI / 180) * Math.cos(coords2.latitude * Math.PI / 180) *
+                          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c; // Distance in km
+            }
+        },
+
+        // UI Helpers
+        showModal(title, body, footer) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').innerHTML = body;
+            document.getElementById('modalFooter').innerHTML = footer;
+            document.getElementById('modal').classList.add('show');
+        },
+        closeModal() { document.getElementById('modal').classList.remove('show'); },
+        showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 500);
+            }, duration);
+        }
+    };
+
+    // Start the application once the DOM is ready
+    document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+
+</body>
+</html>
