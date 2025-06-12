@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐕 Gassinaut - Deine Gassi-App</title>
+    
+    <!-- Leaflet CSS & JS für die interaktiven Karten -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Chart.js für die wunderschönen, animierten Graphen -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script> <!-- Für Zeitachsen -->
+    
+    <style>
+        /*
+         * Gassinaut CSS - Handgefertigt mit Hundeliebe
+         * Senior Dev & UI/UX Master Edition
+         * Kynologisch fundiert, technologisch brillant.
+        */
+
+        /* --- 🎨 THEME & GRUNDLAGEN --- */
+        :root {
+            --bg-main: #f4f3ee;
+            --bg-nav: #ffffff;
+            --bg-card: #ffffff;
+            --primary: #3a5a40; /* Waldgrün */
+            --secondary: #a3b18a; /* Salbeigrün */
+            --accent: #e56b6f; /* Lachsrot */
+            --highlight: #ffc107; /* Sonnengelb (Ball) */
+            --text-dark: #212529;
+            --text-light: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --border-radius: 16px;
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Ein kleiner "hundiger" Touch für den Hintergrund */
+        body {
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px; /* Platz für die Bottom-Nav */
+            background-color: var(--bg-main);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a3b18a' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* --- ✨ ANIMATIONEN --- */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; } }
+        @keyframes slideInUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes wag { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(10deg); } 75% { transform: rotate(-10deg); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* --- 📱 LAYOUT (MOBILE FIRST) --- */
+        #app { display: flex; flex-direction: column; min-height: 100vh; }
+        header { display: none; /* Auf Desktop sichtbar */ }
+        main { flex-grow: 1; padding: 1rem; }
+        .page { display: none; animation: fadeIn 0.4s ease-out; }
+        .page.active { display: block; }
+        .grid-container { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        @media (min-width: 768px) {
+            .grid-container { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+        }
+
+        /* --- 🧭 BOTTOM NAVIGATION --- */
+        #bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background-color: var(--bg-nav);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 0.7rem;
+            width: 100%;
+            height: 100%;
+            transition: color 0.2s, transform 0.2s;
+        }
+        .nav-btn .icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .nav-btn:hover { color: var(--primary); }
+        .nav-btn.active { color: var(--primary); transform: translateY(-3px); }
+
+        /* ---  MODALS (Overlays) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content {
+            background: var(--bg-main);
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .modal-header h3 { margin: 0; color: var(--primary); }
+        .modal-footer { margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+        /* --- 🃏 KARTEN (CARDS) & UI-ELEMENTE --- */
+        h2 { color: var(--primary); border-bottom: 3px solid var(--secondary); padding-bottom: 0.5rem; margin-top: 0; }
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1rem;
+            animation: slideInUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 50px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: all 0.2s; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: #2c4733; transform: translateY(-2px); }
+        .btn-secondary { background-color: var(--secondary); color: var(--primary); }
+        .btn-danger { background-color: var(--accent); color: white; }
+        .btn-add {
+            position: fixed;
+            bottom: 90px;
+            right: 1.5rem;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-size: 2.5rem;
+            line-height: 55px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 900;
+            transition: transform 0.3s;
+        }
+        .btn-add:hover { transform: rotate(90deg) scale(1.1); }
+
+        /* --- 📝 FORMULARE --- */
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: var(--primary); }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            background-color: white;
+        }
+        .checkbox-group { max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; }
+
+        /* --- 📅 KALENDER --- */
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .calendar-header { font-weight: bold; text-align: center; color: var(--text-light); padding-bottom: 10px; }
+        .calendar-day {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 5px;
+            border-radius: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .calendar-day.other-month { opacity: 0.4; }
+        .calendar-day.today { border: 2px solid var(--highlight); }
+        .calendar-day:hover { transform: scale(1.05); z-index: 10; background-color: var(--secondary); }
+        .day-number { font-weight: bold; }
+        .day-indicator {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-top: 4px;
+        }
+        .indicator-walk { background-color: var(--primary); }
+        .indicator-event { background-color: var(--accent); }
+
+        /* --- 🗺️ KARTE --- */
+        .map-container {
+            height: 200px; width: 100%;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            background-color: #e9e9e9;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Custom Dog Marker Icon */
+        .dog-icon {
+            font-size: 24px;
+            text-shadow: 0 0 5px white;
+        }
+        .map-legend {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 500;
+        }
+        .map-legend .legend-item { display: flex; align-items: center; font-size: 0.8rem; }
+        .map-legend .legend-color { width: 20px; height: 5px; margin-right: 5px; }
+
+        /* --- 🐕 LIVE GASSI VIEW --- */
+        #live-gassi-view {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-main);
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        #live-gassi-view.active { transform: translateY(0); }
+        #live-gassi-map { flex-grow: 1; width: 100%; }
+        #live-gassi-controls {
+            padding: 1rem;
+            background: var(--bg-nav);
+            border-top-left-radius: var(--border-radius);
+            border-top-right-radius: var(--border-radius);
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+        }
+        .live-stats { display: flex; justify-content: space-around; text-align: center; margin-bottom: 1rem; }
+        .live-stats h4 { margin: 0 0 5px 0; color: var(--text-light); font-size: 0.8rem; }
+        .live-stats p { margin: 0; font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        .live-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+        .live-main-controls { display: flex; gap: 1rem; }
+        .live-main-controls .btn { flex-grow: 1; }
+        #live-training-timer { text-align: center; color: var(--accent); font-weight: bold; margin-bottom: 1rem; height: 20px; }
+
+        /* --- ✨ TOAST NOTIFICATION --- */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3000;
+        }
+        .toast {
+            padding: 10px 20px;
+            border-radius: 50px;
+            color: white;
+            font-weight: bold;
+            box-shadow: var(--shadow);
+            animation: slideInUp 0.3s, fadeOut 0.3s 2.7s forwards;
+        }
+        .toast.success { background-color: var(--primary); }
+        .toast.error { background-color: var(--accent); }
+        .toast.info { background-color: var(--highlight); color: var(--text-dark); }
+        .toast .icon { animation: wag 1s ease-in-out; display: inline-block; margin-right: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <main id="main-content"></main> <!-- Content wird hier dynamisch geladen -->
+
+        <nav id="bottom-nav">
+            <button class="nav-btn active" data-page="dashboard"><span class="icon">🏠</span>Dashboard</button>
+            <button class="nav-btn" data-page="management"><span class="icon">🗃️</span>Verwaltung</button>
+            <button class="nav-btn" data-page="calendar"><span class="icon">📅</span>Kalender</button>
+            <button class="nav-btn" data-page="stats"><span class="icon">📊</span>Statistik</button>
+            <button class="nav-btn" data-page="settings"><span class="icon">⚙️</span>Profil</button>
+        </nav>
+    </div>
+
+    <!-- ========= MODALS & OVERLAYS ========= -->
+
+    <!-- Profilauswahl-Modal -->
+    <div id="profile-select-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Willkommen bei Gassinaut!</h3></div>
+            <div class="modal-body">
+                <p>Wähle ein Hundeprofil aus oder erstelle ein neues.</p>
+                <div id="profile-list" class="grid-container"></div>
+                <button id="add-new-profile-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <span class="icon">➕</span> Neues Profil anlegen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Universal-Formular-Modal -->
+    <div id="form-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="form-modal-title"></h3></div>
+            <form id="modal-form">
+                <input type="hidden" id="modal-item-id">
+                <input type="hidden" id="modal-item-type">
+                <div id="modal-form-fields"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-close-modal btn btn-secondary">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bestätigungs-Modal -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content text-center">
+            <h3 id="confirm-title">Bestätigen</h3>
+            <p id="confirm-text"></p>
+            <div class="modal-footer" style="justify-content: center;">
+                <button type="button" class="btn-close-modal btn btn-secondary">Abbrechen</button>
+                <button type="button" id="confirm-ok-btn" class="btn btn-danger">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gassi-Konfigurations-Modal -->
+    <div id="gassi-config-modal" class="modal-overlay">
+         <div class="modal-content">
+            <div class="modal-header"><h3>Gassi Runde konfigurieren</h3></div>
+            <div class="modal-body">
+                <!-- Tabs für die Konfiguration -->
+                <div id="gassi-config-sections">
+                    <!-- Inhalt wird dynamisch generiert -->
+                </div>
+            </div>
+             <div class="modal-footer">
+                <button type="button" class="btn-close-modal btn btn-secondary">Später</button>
+                <button id="start-quick-walk-btn" class="btn btn-secondary" style="background-color: var(--highlight);">⚡ Quick</button>
+                <button id="start-configured-walk-btn" class="btn btn-primary">▶️ Los geht's!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Gassi Ansicht -->
+    <div id="live-gassi-view">
+        <div id="live-gassi-map"></div>
+        <div id="live-gassi-controls">
+            <div class="live-stats">
+                <div class="stat-item"><h4 >Zeit</h4><p id="gassi-timer">00:00:00</p></div>
+                <div class="stat-item"><h4>Distanz</h4><p id="gassi-distance">0.00 km</p></div>
+                <div class="stat-item"><h4>Schritte</h4><p id="gassi-steps">0</p></div>
+            </div>
+            <div id="live-training-timer"></div>
+            <div class="live-actions">
+                <button class="btn btn-secondary" id="gassi-log-poop-btn">💩</button>
+                <button class="btn btn-secondary" id="gassi-log-pee-btn">💧</button>
+                <button class="btn btn-secondary" id="gassi-log-marker-btn">📍</button>
+                <button class="btn btn-secondary" id="gassi-start-training-btn">💪</button>
+            </div>
+            <div class="live-main-controls">
+                <button id="gassi-pause-resume-btn" class="btn btn-primary">Pause</button>
+                <button id="gassi-stop-btn" class="btn btn-danger">Stop</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container"></div>
+    <button id="add-item-btn" class="btn-add" style="display: none;">+</button>
+
+    <script>
+    'use strict';
+    // Gassinaut.js - V2.0 - by a Senior Dev who loves Dogs
+    // This isn't just code, it's a digital leash of love.
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // =====================================================================
+        // 1. CORE & STATE MANAGEMENT
+        // =====================================================================
+        const DB_KEY = 'gassinaut_v2_data';
+        let state = {
+            db: {},
+            activeProfileId: null,
+            currentPage: 'dashboard',
+            maps: {}, // To hold map instances
+            charts: {}, // To hold chart instances
+            gassi: {
+                active: false,
+                // ... other gassi state properties
+            }
+        };
+
+        const db = {
+            load() {
+                const data = localStorage.getItem(DB_KEY);
+                state.db = data ? JSON.parse(data) : { profiles: [] };
+                state.activeProfileId = localStorage.getItem(`${DB_KEY}_activeProfile`);
+            },
+            save() {
+                localStorage.setItem(DB_KEY, JSON.stringify(state.db));
+                if (state.activeProfileId) {
+                    localStorage.setItem(`${DB_KEY}_activeProfile`, state.activeProfileId);
+                }
+            },
+            getActiveProfile() {
+                if (!state.activeProfileId || !state.db.profiles) return null;
+                return state.db.profiles.find(p => p.id === state.activeProfileId);
+            },
+            getActiveProfileData() {
+                const profile = this.getActiveProfile();
+                return profile ? profile.data : null;
+            }
+        };
+
+        function init() {
+            db.load();
+            setupEventListeners();
+            requestGpsPermission();
+
+            if (!state.activeProfileId || !db.getActiveProfile()) {
+                showProfileSelection();
+            } else {
+                renderPage(state.currentPage);
+            }
+        }
+
+        // =====================================================================
+        // 2. PROFILE MANAGEMENT
+        // =====================================================================
+        function showProfileSelection() {
+            const list = document.getElementById('profile-list');
+            list.innerHTML = '';
+            if (state.db.profiles.length > 0) {
+                state.db.profiles.forEach(profile => {
+                    list.innerHTML += `
+                        <div class="card" data-profile-id="${profile.id}" style="cursor: pointer; text-align: center;">
+                            <img src="${profile.details.foto || 'https://via.placeholder.com/100'}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                            <h3>${profile.details.name}</h3>
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = `<p class="text-center">Noch kein Hundeprofil angelegt. Zeit für den ersten Gassinauten!</p>`;
+            }
+            showModal('profile-select-modal');
+        }
+
+        function selectProfile(id) {
+            state.activeProfileId = id;
+            db.save();
+            closeModal('profile-select-modal');
+            renderPage('dashboard', true); // Force dashboard reload
+        }
+
+        function createNewProfile(details) {
+            const newProfile = {
+                id: `dog_${Date.now()}`,
+                details, // { name, rasse, foto, etc... }
+                data: getInitialDataStructure()
+            };
+            state.db.profiles.push(newProfile);
+            selectProfile(newProfile.id);
+            showToast(`Willkommen, ${details.name}! <span class="icon">🐾</span>`, 'success');
+        }
+        
+        function updateProfile(id, details) {
+            const profile = state.db.profiles.find(p => p.id === id);
+            if(profile) {
+                profile.details = { ...profile.details, ...details };
+                db.save();
+                renderPage('settings'); // Refresh settings page
+                showToast('Profil aktualisiert!', 'success');
+            }
+        }
+
+        function deleteProfile(id) {
+             showConfirmModal(`Bist du sicher? Alle Daten für diesen Hund werden unwiderruflich gelöscht!`, () => {
+                state.db.profiles = state.db.profiles.filter(p => p.id !== id);
+                if (state.activeProfileId === id) {
+                    state.activeProfileId = state.db.profiles.length > 0 ? state.db.profiles[0].id : null;
+                }
+                db.save();
+                showProfileSelection();
+            });
+        }
+
+
+        // =====================================================================
+        // 3. PAGE ROUTING & RENDERING
+        // =====================================================================
+        const mainContent = document.getElementById('main-content');
+        
+        const pageTemplates = {
+            dashboard: () => `
+                <div class="page active">
+                    <h2 id="dashboard-title">Dashboard</h2>
+                    <div class="card" style="margin-bottom: 1rem;">
+                        <h3>Letzte Runde</h3>
+                        <div id="dashboard-last-walk-map" class="map-container"></div>
+                        <div id="dashboard-last-walk-stats" style="margin-top: 1rem;"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Nächster Termin</h3>
+                        <div id="dashboard-next-event"></div>
+                    </div>
+                    <button id="gassi-start-btn" class="btn-add" style="font-size: 2rem; line-height: 60px;">▶️</button>
+                </div>
+            `,
+            management: () => `
+                 <div class="page active">
+                    <h2>Verwaltung</h2>
+                    <div class="grid-container" id="management-container">
+                        ${['utensilien', 'leckerli', 'hundefreunde', 'uebungen', 'krankheiten'].map(type => `
+                            <div class="card" data-manage-type="${type}" style="cursor:pointer;">
+                                <h3>${getPluralTitle(type)}</h3>
+                                <p>Verwalte alle ${getPluralTitle(type).toLowerCase()}.</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `,
+            calendar: () => `
+                <div class="page active">
+                    <h2>Kalender</h2>
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <button id="prev-month" class="btn btn-secondary">‹</button>
+                            <h3 id="calendar-month-year" style="margin:0;"></h3>
+                            <button id="next-month" class="btn btn-secondary">›</button>
+                        </div>
+                        <div id="calendar-weekdays" class="calendar-header"></div>
+                        <div id="calendar-grid"></div>
+                    </div>
+                </div>
+            `,
+            stats: () => `
+                <div class="page active">
+                    <h2>Statistiken</h2>
+                    <div class="card">
+                        <div id="stats-filter-container" style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary stats-filter active" data-period="week">Woche</button>
+                            <button class="btn btn-secondary stats-filter" data-period="month">Monat</button>
+                            <button class="btn btn-secondary stats-filter" data-period="year">Jahr</button>
+                        </div>
+                        <div id="stats-charts-container"></div>
+                    </div>
+                </div>
+            `,
+            settings: () => `
+                 <div class="page active">
+                    <h2>Profil & Einstellungen</h2>
+                    <div id="settings-profile-card" class="card"></div>
+                    <div class="card" style="margin-top: 1rem;">
+                        <h3>Datenmanagement</h3>
+                        <button id="export-btn" class="btn btn-secondary">Daten Exportieren (CSV)</button>
+                        <button id="import-btn" class="btn btn-secondary" style="margin-top: 0.5rem;">Daten Importieren (CSV)</button>
+                    </div>
+                     <div class="card" style="margin-top: 1rem;">
+                        <h3>Profile</h3>
+                        <button id="switch-profile-btn" class="btn btn-secondary">Profil wechseln</button>
+                        <button id="delete-profile-btn" class="btn btn-danger" style="margin-top: 0.5rem;">Aktuelles Profil löschen</button>
+                    </div>
+                </div>
+            `
+        };
+
+        function switchPage(pageId) {
+            if (!db.getActiveProfile() && pageId !== 'settings') {
+                showProfileSelection();
+                return;
+            }
+            state.currentPage = pageId;
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.nav-btn[data-page="${pageId}"]`).classList.add('active');
+            renderPage(pageId);
+        }
+
+        function renderPage(pageId, forceReload = false) {
+            // Destroy old maps and charts to prevent memory leaks
+            Object.values(state.maps).forEach(map => map && map.remove());
+            state.maps = {};
+            Object.values(state.charts).forEach(chart => chart && chart.destroy());
+            state.charts = {};
+
+            const template = pageTemplates[pageId];
+            if (template) {
+                mainContent.innerHTML = template();
+                const postRenderFunction = `postRender_${pageId}`;
+                if (window[postRenderFunction]) {
+                    window[postRenderFunction]();
+                }
+            }
+            
+            // Show/hide the global "add" button
+            document.getElementById('add-item-btn').style.display = 'none';
+        }
+
+        // Post-render functions to populate dynamic content
+        window.postRender_dashboard = () => {
+            const profile = db.getActiveProfile();
+            document.getElementById('dashboard-title').textContent = `Hi, ${profile.details.name}!`;
+
+            const data = db.getActiveProfileData();
+            const lastWalk = data.walks && data.walks.length > 0 ? data.walks[data.walks.length - 1] : null;
+            
+            if (lastWalk) {
+                renderMap('dashboard-last-walk-map', lastWalk.positions, [], true);
+                document.getElementById('dashboard-last-walk-stats').innerHTML = `
+                    <p><strong>Dauer:</strong> ${formatTime(lastWalk.duration)} | <strong>Distanz:</strong> ${lastWalk.distance.toFixed(2)} km</p>
+                `;
+            } else {
+                 document.getElementById('dashboard-last-walk-map').innerHTML = `<p class="text-center" style="padding: 2rem;">Zeit für die erste Runde!</p>`;
+            }
+
+            // Next event logic...
+        };
+
+        window.postRender_management = () => { /* Event listeners set up globally */ };
+        window.postRender_calendar = () => renderCalendar(new Date());
+        window.postRender_stats = () => renderStatistics('week');
+        window.postRender_settings = () => {
+            const profile = db.getActiveProfile();
+            document.getElementById('settings-profile-card').innerHTML = `
+                <div style="display:flex; align-items:center; gap: 1rem;">
+                    <img src="${profile.details.foto || 'https://via.placeholder.com/100'}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">
+                    <div>
+                        <h3>${profile.details.name}</h3>
+                        <p>${profile.details.rasse || 'Rasse unbekannt'}</p>
+                    </div>
+                </div>
+                <button id="edit-profile-btn" class="btn btn-primary" style="width:100%; margin-top:1rem;">Profil bearbeiten</button>
+            `;
+        };
+        
+        // ... more post-render functions ...
+        
+        // =====================================================================
+        // 4. MAP (LEAFLET) MANAGER
+        // =====================================================================
+        function renderMap(containerId, routePoints = [], livePoint = null, isStatic = false) {
+            if (state.maps[containerId]) state.maps[containerId].remove();
+            
+            const mapContainer = document.getElementById(containerId);
+            if (!mapContainer) return;
+            
+            const map = L.map(containerId, {
+                zoomControl: !isStatic,
+                dragging: !isStatic,
+                scrollWheelZoom: !isStatic,
+            }).setView([51.505, -0.09], 13); // Default view
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            state.maps[containerId] = map;
+
+            // Display existing route
+            if (routePoints && routePoints.length > 0) {
+                const latlngs = routePoints.map(p => [p.lat, p.lng]);
+                const polyline = L.polyline(latlngs, { color: 'red', weight: 4 }).addTo(map);
+                map.fitBounds(polyline.getBounds().pad(0.1));
+                
+                routePoints.forEach((p, i) => {
+                    if(p.size > 1) { // Bigger dot for longer stops
+                        L.circleMarker([p.lat, p.lng], {color: 'red', radius: 4 + p.size, fillOpacity: 0.5}).addTo(map);
+                    }
+                });
+
+            } else {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+                });
+            }
+
+            // Add legend
+            const legend = L.control({position: 'bottomright'});
+            legend.onAdd = function (map) {
+                const div = L.DomUtil.create('div', 'map-legend');
+                div.innerHTML = `
+                    <div class="legend-item"><span class="legend-color" style="background:red;"></span> Aktuelle Route</div>
+                    <div class="legend-item"><span class="legend-color" style="background:green;"></span> Geplante Route</div>
+                `;
+                return div;
+            };
+            legend.addTo(map);
+
+            return map;
+        }
+
+        async function requestGpsPermission() {
+            try {
+                const result = await navigator.permissions.query({ name: 'geolocation' });
+                if (result.state === 'granted') {
+                    showToast('GPS bereit! 🛰️', 'info');
+                } else if (result.state === 'prompt') {
+                    // It will ask when needed
+                } else if (result.state === 'denied') {
+                    showToast('GPS-Zugriff blockiert. Bitte in den Einstellungen erlauben.', 'error');
+                }
+            } catch (e) {
+                console.warn("Permission API not supported, will ask on first use.");
+            }
+        }
+        
+        // =====================================================================
+        // 5. GASSI WALK MANAGER
+        // =====================================================================
+        
+        function showGassiConfig() {
+            // Populate the modal with configuration options
+            // ...
+            showModal('gassi-config-modal');
+        }
+
+        function startWalk(isQuick = false, config = {}) {
+            closeModal('gassi-config-modal');
+            
+            state.gassi = {
+                active: true,
+                paused: false,
+                startTime: Date.now(),
+                pauseTime: 0,
+                duration: 0,
+                distance: 0,
+                steps: 0,
+                positions: [],
+                events: [],
+                lastPosition: null,
+                lastPositionTimestamp: 0,
+                config,
+                timerInterval: setInterval(updateLiveGassiTimer, 1000),
+                geoWatchId: null
+            };
+            
+            document.getElementById('live-gassi-view').classList.add('active');
+            const map = renderMap('live-gassi-map');
+
+            state.gassi.geoWatchId = navigator.geolocation.watchPosition(
+                updateLivePosition,
+                (err) => showToast(`GPS Fehler: ${err.message}`, 'error'),
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
+        }
+
+        function updateLivePosition(pos) {
+            const { latitude, longitude } = pos.coords;
+            const currentPosition = { lat: latitude, lng: longitude };
+            const map = state.maps['live-gassi-map'];
+
+            if (!map) return;
+
+            if (state.gassi.lastPosition) {
+                 if (!state.gassi.paused) {
+                    const dist = calculateDistance(state.gassi.lastPosition, currentPosition);
+                    state.gassi.distance += dist;
+                    state.gassi.steps += Math.round(dist * 1000 / 0.78); // Avg step length
+                    document.getElementById('gassi-distance').textContent = `${state.gassi.distance.toFixed(2)} km`;
+                    document.getElementById('gassi-steps').textContent = state.gassi.steps;
+                }
+            } else {
+                // First fix
+                map.setView(currentPosition, 17);
+            }
+            
+             // Create polyline if it doesn't exist
+            if (!state.maps.livePolyline) {
+                state.maps.livePolyline = L.polyline([], { color: 'red' }).addTo(map);
+            }
+            // Update dog marker
+            if (!state.maps.dogMarker) {
+                 state.maps.dogMarker = L.marker(currentPosition, { icon: L.divIcon({ className: 'dog-icon', html: '🐾' }) }).addTo(map);
+            } else {
+                state.maps.dogMarker.setLatLng(currentPosition);
+            }
+
+            if (!state.gassi.paused) {
+                const now = Date.now();
+                // Logic to make dots bigger on stops
+                const timeDiff = now - state.gassi.lastPositionTimestamp;
+                let pointSize = 1;
+                if(timeDiff > 60000) { // more than 1 minute
+                    pointSize = Math.floor(timeDiff / 60000);
+                }
+                
+                const newPoint = { lat: latitude, lng: longitude, time: now, size: pointSize };
+                state.gassi.positions.push(newPoint);
+                state.maps.livePolyline.addLatLng([latitude, longitude]);
+                
+                if(pointSize > 1) {
+                     L.circleMarker([latitude, longitude], {color: 'red', radius: 4 + pointSize, fillOpacity: 0.5}).addTo(map);
+                }
+            }
+
+            state.gassi.lastPosition = currentPosition;
+            state.gassi.lastPositionTimestamp = Date.now();
+        }
+
+        function updateLiveGassiTimer() {
+            if (!state.gassi.active || state.gassi.paused) return;
+            const elapsed = Math.floor((Date.now() - state.gassi.startTime - state.gassi.pauseTime) / 1000);
+            document.getElementById('gassi-timer').textContent = formatTime(elapsed);
+        }
+        
+        function stopWalk() {
+             showConfirmModal('Möchtest du die Runde beenden und speichern?', () => {
+                state.gassi.active = false;
+                clearInterval(state.gassi.timerInterval);
+                if (state.gassi.geoWatchId) navigator.geolocation.clearWatch(state.gassi.geoWatchId);
+                
+                // Finalize data
+                const finalDuration = Math.floor((Date.now() - state.gassi.startTime - state.gassi.pauseTime) / 1000);
+                const walkData = {
+                    id: `walk_${Date.now()}`,
+                    startTime: state.gassi.startTime,
+                    duration: finalDuration,
+                    distance: state.gassi.distance,
+                    positions: state.gassi.positions,
+                    events: state.gassi.events
+                    // Add rating etc. from a final modal here
+                };
+
+                const profileData = db.getActiveProfileData();
+                profileData.walks.push(walkData);
+                db.save();
+                
+                document.getElementById('live-gassi-view').classList.remove('active');
+                showToast('Super Runde! 🦴', 'success');
+                renderPage('dashboard');
+             });
+        }
+        
+        // ... and all other helper functions (calculateDistance, formatTime etc.)
+
+        // =====================================================================
+        // 6. EVENT LISTENERS
+        // =====================================================================
+        function setupEventListeners() {
+            // Main Navigation
+            document.getElementById('bottom-nav').addEventListener('click', e => {
+                const navBtn = e.target.closest('.nav-btn');
+                if (navBtn) switchPage(navBtn.dataset.page);
+            });
+
+            // Profile Selection
+            document.getElementById('profile-select-modal').addEventListener('click', e => {
+                const profileCard = e.target.closest('.card[data-profile-id]');
+                if (profileCard) selectProfile(profileCard.dataset.profileId);
+            });
+            document.getElementById('add-new-profile-btn').addEventListener('click', () => {
+                // Here you would open a form modal to create a profile
+                console.log("Open profile creation form");
+            });
+
+            // Modal Closing
+            document.querySelectorAll('.btn-close-modal').forEach(btn => {
+                btn.addEventListener('click', e => closeModal(e.target.closest('.modal-overlay').id));
+            });
+
+            // Gassi Start Buttons
+            document.body.addEventListener('click', e => {
+                if (e.target.id === 'gassi-start-btn') showGassiConfig();
+                if (e.target.id === 'start-configured-walk-btn') startWalk(false, {});
+                if (e.target.id === 'start-quick-walk-btn') startWalk(true);
+            });
+            
+            // Live Gassi Controls
+            document.getElementById('gassi-stop-btn').addEventListener('click', stopWalk);
+            
+            // Settings/Profile actions
+            document.body.addEventListener('click', e => {
+                if (e.target.id === 'switch-profile-btn') showProfileSelection();
+                if (e.target.id === 'delete-profile-btn') deleteProfile(state.activeProfileId);
+                if (e.target.id === 'edit-profile-btn') console.log("Open profile edit form");
+            });
+        }
+        
+        
+        // =====================================================================
+        // 7. UTILITY & HELPER FUNCTIONS
+        // =====================================================================
+        function showModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message; // Use innerHTML to allow icons
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        function showConfirmModal(text, onConfirm) {
+            document.getElementById('confirm-text').textContent = text;
+            const confirmBtn = document.getElementById('confirm-ok-btn');
+            // Clone and replace to remove old event listeners - a robust pattern
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            
+            newConfirmBtn.addEventListener('click', () => {
+                onConfirm();
+                closeModal('confirm-modal');
+            }, { once: true });
+            
+            showModal('confirm-modal');
+        }
+        function formatTime(seconds) {
+            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+        function calculateDistance(pos1, pos2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+            const dLon = (pos2.lng - pos1.lng) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+        
+        // Dummy data structure for a new profile
+        function getInitialDataStructure() { return { utensilien: [], leckerli: [], hundefreunde: [], uebungen: [], krankheiten: [], walks: [], calendarEvents: [] }; }
+        function getPluralTitle(type) {
+            const titles = { utensilien: 'Utensilien', leckerli: 'Leckerli', hundefreunde: 'Hundefreunde', uebungen: 'Übungen', krankheiten: 'Gesundheit' };
+            return titles[type] || 'Items';
+        }
+
+
+        // Let's go!
+        init();
+
+    });
+    </script>
+</body>
+</html>
