@@ -2086,6 +2086,10 @@
 
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${page}`).classList.add('active');
+            console.log(`Navigated to page: ${page}. Element visibility: ${document.getElementById(`page-${page}`).classList.contains('active')}`);
+            if (page === 'gassi') {
+                console.log("Ensuring Gassi page elements are as expected for visibility.");
+            }
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.page === page);
             });
@@ -2106,6 +2110,7 @@
 
         // Dashboard
         loadDashboard() {
+            console.log("loadDashboard called. Refreshing dashboard stats and last walk map.");
             const dog = this.getCurrentDog();
             if (!dog) return;
 
@@ -2128,6 +2133,7 @@
             const loading = mapContainer.querySelector('.map-loading');
 
             const lastWalk = dog?.data.walks?.slice(-1)[0];
+            console.log("Last walk data being used for map:", lastWalk);
 
             if (!lastWalk || !lastWalk.route || lastWalk.route.length < 2) {
                 infoContainer.innerHTML = `<p>Noch keine Runde aufgezeichnet.</p>`;
@@ -2319,6 +2325,7 @@
                     return;
                 }
                 this.isActive = true;
+                console.log("Gassi page should be visible now. Stop button HTML:", document.querySelector('#page-gassi .btn-danger').outerHTML);
                 this.isPaused = false;
                 this.startTime = new Date();
                 this.route = [];
@@ -2333,7 +2340,7 @@
                     app.maps.gassi = L.map('gassiMap', { zoomControl: false, attributionControl: false });
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(app.maps.gassi);
                 }
-
+                console.log("Gassi map object before watchPosition:", app.maps.gassi);
                 this.watchId = navigator.geolocation.watchPosition(
                     pos => this.onPositionUpdate(pos),
                     err => this.onPositionError(err),
@@ -2341,11 +2348,13 @@
                 );
             },
             onPositionUpdate(position) {
+                console.log("GPS Position Update:", position);
                 if (this.isPaused) return;
 
                 const { latitude, longitude, speed } = position.coords;
                 const currentCoord = [latitude, longitude];
 
+                console.log("Map objects check: app.maps.gassi:", app.maps.gassi, "this.dogMarker:", this.dogMarker, "this.routeLine:", this.routeLine);
                 document.querySelector('#page-gassi .map-loading').style.display = 'none';
 
                 if (!this.lastPosition) { // First point
@@ -2358,8 +2367,10 @@
                         iconSize: [36, 36],
                         iconAnchor: [18, 36]
                     });
+                    console.log("Updating map with new coordinates:", currentCoord);
                     this.dogMarker = L.marker(currentCoord, { icon: dogIcon }).addTo(app.maps.gassi);
                     this.routeLine = L.polyline([], { color: 'var(--secondary)', weight: 5 }).addTo(app.maps.gassi);
+                    console.log("Gassi map initialized with first GPS point. Loading spinner should be hidden now.");
                 } else {
                     this.distance += this.haversineDistance(this.lastPosition.coords, position.coords);
                 }
@@ -2367,6 +2378,7 @@
                 this.lastPosition = position;
                 this.route.push(currentCoord);
                 
+                console.log("Updating map with new coordinates:", currentCoord);
                 this.dogMarker.setLatLng(currentCoord);
                 this.routeLine.addLatLng(currentCoord);
                 
@@ -2374,7 +2386,8 @@
                 document.getElementById('gassiSpeed').textContent = speed ? `${(speed * 3.6).toFixed(1)} km/h` : '0.0 km/h';
             },
             onPositionError(error) {
-                app.showToast(`GPS-Fehler: ${error.message}`, 'error');
+                console.error("GPS Error:", error);
+                app.showModal("GPS Fehler", `<p>Ein GPS-Fehler ist aufgetreten: ${error.message}</p><p>Stelle sicher, dass GPS aktiviert ist und die App Zugriff darauf hat.</p>`, '<button class="btn btn-primary" onclick="app.closeModal()">OK</button>');
             },
             updateTimer() {
                 const now = new Date();
@@ -2401,11 +2414,13 @@
                 }
             },
             confirmStop() {
+                console.log("confirmStop called. Showing modal for stop confirmation.");
                 app.showModal('Gassi beenden?', '<p>Möchtest du die Runde beenden und speichern?</p>',
                 `<button class="btn btn-secondary" onclick="app.closeModal()">Weitergehen</button>
                  <button class="btn btn-danger" onclick="app.gassi.stop()">Beenden & Speichern</button>`);
             },
             stop() {
+                console.log("stop called. Proceeding to stop Gassi, save data, and navigate.");
                 this.isActive = false;
                 clearInterval(this.timerInterval);
                 navigator.geolocation.clearWatch(this.watchId);
@@ -2420,8 +2435,10 @@
                 };
 
                 const dog = app.getCurrentDog();
-                dog.data.walks.push(walkData);
+                dog.data.walks.push(walkAData);
+                console.log("Walk data to be saved:", walkData);
                 app.saveData();
+                console.log("Data saved. Navigating to dashboard.");
 
                 // Cleanup map
                 if (app.maps.gassi) {
@@ -2431,7 +2448,7 @@
                 }
                 
                 app.closeModal();
-                app.showToast('Runde gespeichert!', 'success');
+                app.showToast(`Runde gespeichert! Distanz: ${walkData.distance.toFixed(2)} km, Dauer: ${Math.round(walkData.duration)} min`, 'success', 4000);
                 app.navigateTo('dashboard');
             },
             logEvent(type) {
